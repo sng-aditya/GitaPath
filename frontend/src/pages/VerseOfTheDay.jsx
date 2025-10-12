@@ -217,17 +217,7 @@ export default function VerseOfTheDay({ user }) {
             </div>
           )}
 
-          <div className="inspiration-section">
-            <h2>Daily Spiritual Reflection</h2>
-            <p>
-              Take a moment to contemplate this verse. How can its wisdom guide your actions today? 
-              The Bhagavad Gita offers timeless teachings that can illuminate every aspect of our lives.
-            </p>
-            <p>
-              Consider journaling about how this verse resonates with your current life situation, 
-              or simply sit in quiet meditation, allowing the profound truth to settle into your heart.
-            </p>
-          </div>
+
         </div>
       </div>
     </div>

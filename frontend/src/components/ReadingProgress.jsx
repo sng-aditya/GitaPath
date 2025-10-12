@@ -70,14 +70,8 @@ const ReadingProgress = ({ progress, onContinueReading, onStartFresh, user }) =>
         </div>
       </div>
 
-      <div className="progress-bar-container">
-        <div className="progress-bar">
-          <div 
-            className="progress-fill" 
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
-        <span className="progress-text">{Math.round(progressPercentage)}% Complete</span>
+      <div className="progress-percentage">
+        {Math.round(progressPercentage)}% Complete
       </div>
 
       <div className="progress-actions">

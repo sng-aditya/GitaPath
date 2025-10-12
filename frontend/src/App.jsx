@@ -9,6 +9,7 @@ import Chapters from './pages/Chapters'
 import Donate from './pages/Donate'
 import Header from './components/Header'
 import Footer from './components/Footer'
+import BookmarksModal from './components/BookmarksModal'
 import { SnackbarProvider } from './components/SnackbarProvider'
 import axios from 'axios'
 
@@ -23,11 +24,19 @@ export default function App(){
   })
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showSignupModal, setShowSignupModal] = useState(false)
+  const [bookmarks, setBookmarks] = useState([])
+  const [showBookmarksModal, setShowBookmarksModal] = useState(false)
 
 
   useEffect(() => {
     checkAuth()
   }, [])
+  
+  useEffect(() => {
+    if (user) {
+      loadBookmarks()
+    }
+  }, [user])
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -65,6 +74,95 @@ export default function App(){
     setLoading(false)
   }
 
+  async function loadBookmarks() {
+    if (!user) return
+    try {
+      const token = localStorage.getItem('token')
+      const res = await axios.get('http://10.30.161.230:4000/api/user/bookmarks', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      
+      const bookmarksWithSlokas = await Promise.all(
+        (res.data.bookmarks || []).map(async (bookmark) => {
+          try {
+            const verseRes = await axios.get(`http://10.30.161.230:4000/api/gita/slok/${bookmark.chapter}/${bookmark.verse}`)
+            return {
+              ...bookmark,
+              slok: verseRes.data.slok
+            }
+          } catch (err) {
+            return {
+              ...bookmark,
+              slok: 'Unable to load verse text'
+            }
+          }
+        })
+      )
+      
+      setBookmarks(bookmarksWithSlokas)
+    } catch (err) {
+      console.error('Failed to load bookmarks:', err)
+    }
+  }
+
+  async function handleBookmarkVerse(verse) {
+    if (!user || !verse) return
+    
+    try {
+      const token = localStorage.getItem('token')
+      const isCurrentlyBookmarked = isBookmarked(verse.chapter, verse.verse)
+      
+      if (isCurrentlyBookmarked) {
+        // Remove bookmark
+        await axios.delete(`http://10.30.161.230:4000/api/user/bookmark/${verse.chapter}/${verse.verse}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        setBookmarks(prev => prev.filter(b => !(b.chapter === verse.chapter && b.verse === verse.verse)))
+      } else {
+        // Add bookmark
+        await axios.post(`http://10.30.161.230:4000/api/user/bookmark/${verse.chapter}/${verse.verse}`, {
+          slok: verse.slok,
+          translation: verse.siva?.et || verse.purohit?.et || 'No translation available'
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        
+        const newBookmark = {
+          chapter: verse.chapter,
+          verse: verse.verse,
+          slok: verse.slok,
+          translation: verse.siva?.et || verse.purohit?.et || 'No translation available'
+        }
+        setBookmarks(prev => [...prev, newBookmark])
+      }
+    } catch (err) {
+      console.error('Failed to bookmark verse:', err)
+      alert('Failed to bookmark verse. Please try again.')
+    }
+  }
+
+  function isBookmarked(chapter, verse) {
+    return bookmarks.some(b => b.chapter === chapter && b.verse === verse)
+  }
+
+  async function handleDeleteBookmark(chapter, verse) {
+    try {
+      const token = localStorage.getItem('token')
+      await axios.delete(`http://10.30.161.230:4000/api/user/bookmark/${chapter}/${verse}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setBookmarks(prev => prev.filter(b => !(b.chapter === chapter && b.verse === verse)))
+    } catch (err) {
+      console.error('Failed to delete bookmark:', err)
+      alert('Failed to delete bookmark. Please try again.')
+    }
+  }
+
+  function handleNavigateToVerse(chapter, verse) {
+    setShowBookmarksModal(false)
+    navigate(`/reader?chapter=${chapter}&verse=${verse}`)
+  }
+
   async function handleLogin(userData) {
     setUser(userData)
     setShowLoginModal(false)
@@ -95,6 +193,7 @@ export default function App(){
   function handleLogout() {
     localStorage.removeItem('token')
     setUser(null)
+    setBookmarks([])
     navigate('/')
   }
 
@@ -122,6 +221,8 @@ export default function App(){
           onToggleDarkMode={toggleDarkMode}
           onShowLogin={() => setShowLoginModal(true)}
           onShowSignup={() => setShowSignupModal(true)}
+          bookmarks={bookmarks}
+          onShowBookmarks={() => setShowBookmarksModal(true)}
         />
         
         <main className="main-content">
@@ -130,11 +231,15 @@ export default function App(){
               <LandingPage 
                 onLogin={handleLogin} 
                 user={user}
-                onShowLogin={() => setShowLoginModal(true)}
-                onShowSignup={() => setShowSignupModal(true)}
+                showLoginModal={showLoginModal}
+                setShowLoginModal={setShowLoginModal}
+                showSignupModal={showSignupModal}
+                setShowSignupModal={setShowSignupModal}
+                onBookmarkVerse={handleBookmarkVerse}
+                isBookmarked={isBookmarked}
               />
             } />
-            <Route path="/reader" element={<Reader user={user} darkMode={darkMode} />} />
+            <Route path="/reader" element={<Reader user={user} darkMode={darkMode} bookmarks={bookmarks} onBookmarkVerse={handleBookmarkVerse} isBookmarked={isBookmarked} />} />
             <Route path="/about" element={<About />} />
             <Route path="/verse-of-day" element={<VerseOfTheDay user={user} />} />
             <Route path="/chapters" element={<Chapters />} />
@@ -232,6 +337,15 @@ export default function App(){
             </div>
           </div>
         </div>
+
+        {/* Bookmarks Modal */}
+        <BookmarksModal 
+          isOpen={showBookmarksModal}
+          onClose={() => setShowBookmarksModal(false)}
+          bookmarks={bookmarks}
+          onDeleteBookmark={handleDeleteBookmark}
+          onNavigateToVerse={handleNavigateToVerse}
+        />
 
         {/* Floating Theme Toggle */}
         <div className="floating-theme-toggle" onClick={toggleDarkMode}>

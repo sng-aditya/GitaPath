@@ -7,10 +7,9 @@ import ReadingProgress from '../components/ReadingProgress'
 import BookmarkActions from '../components/BookmarkActions'
 import Dashboard from '../components/Dashboard'
 
-export default function Reader({ user, darkMode }) {
+export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isBookmarked: isBookmarkedProp }) {
   const [verse, setVerse] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [bookmarks, setBookmarks] = useState([])
   const [progress, setProgress] = useState(null)
   const [selectedAuthor, setSelectedAuthor] = useState('chinmay') // Default to Swami Chinmayananda
   const [showTranslation, setShowTranslation] = useState('hindi') // Show Hindi by default
@@ -56,29 +55,28 @@ export default function Reader({ user, darkMode }) {
     if (savedAuthor && authors[savedAuthor]) {
       setSelectedAuthor(savedAuthor)
     }
-    
+
     // Check URL parameters for direct navigation
     const urlParams = new URLSearchParams(window.location.search)
     const chapter = parseInt(urlParams.get('chapter'))
     const verse = parseInt(urlParams.get('verse'))
-    
+
     if (chapter && verse) {
       loadVerse(chapter, verse, false)
     } else {
       loadLastReadVerse()
     }
-    
+
     loadProgress()
-    loadBookmarks()
-    
+
     // Listen for navigation events from search
     const handleNavigateToVerse = (event) => {
       const { chapter, verse } = event.detail
       loadVerse(chapter, verse, true)
     }
-    
+
     window.addEventListener('navigateToVerse', handleNavigateToVerse)
-    
+
     return () => {
       window.removeEventListener('navigateToVerse', handleNavigateToVerse)
     }
@@ -94,28 +92,28 @@ export default function Reader({ user, darkMode }) {
   }
 
   useEffect(() => {
-    // Check if current verse is bookmarked
-    if (verse && bookmarks.length > 0) {
-      const bookmarked = bookmarks.some(b => b.chapter === verse.chapter && b.verse === verse.verse)
+    // Check if current verse is bookmarked using the prop function
+    if (verse && isBookmarkedProp) {
+      const bookmarked = isBookmarkedProp(verse.chapter, verse.verse)
       setIsBookmarked(bookmarked)
     }
-  }, [verse, bookmarks])
+  }, [verse, bookmarks, isBookmarkedProp])
 
   async function loadRandom() {
     console.log('=== LOAD RANDOM VERSE ===')
-    
+
     setLoading(true)
-    
+
     const requestUrl = 'http://10.30.161.230:4000/api/gita/random'
     console.log('Request URL:', requestUrl)
-    
+
     try {
       console.log('Sending random verse request')
       const res = await axios.get(requestUrl)
-      
+
       console.log('Response status:', res.status)
       console.log('Response data:', res.data)
-      
+
       if (res.data && res.data.chapter && res.data.verse) {
         console.log('Valid random response received:', {
           chapter: res.data.chapter,
@@ -138,7 +136,7 @@ export default function Reader({ user, darkMode }) {
         statusText: err.response?.statusText
       })
       showError(`Failed to load random verse: ${err.response?.data?.error || err.message}`)
-    } finally { 
+    } finally {
       setLoading(false)
       console.log('=== LOAD RANDOM COMPLETE ===')
     }
@@ -149,22 +147,22 @@ export default function Reader({ user, darkMode }) {
       console.log('loadNext: No current verse available')
       return
     }
-    
+
     console.log('=== LOAD NEXT VERSE ===')
     console.log('Current verse:', { chapter: verse.chapter, verse: verse.verse })
-    
+
     setLoading(true)
-    
+
     const requestUrl = `http://10.30.161.230:4000/api/gita/next/${verse.chapter}/${verse.verse}`
     console.log('Request URL:', requestUrl)
-    
+
     try {
       console.log('Sending request to:', requestUrl)
       const res = await axios.get(requestUrl)
-      
+
       console.log('Response status:', res.status)
       console.log('Response data:', res.data)
-      
+
       if (res.data && res.data.chapter && res.data.verse) {
         console.log('Valid response received:', {
           chapter: res.data.chapter,
@@ -187,7 +185,7 @@ export default function Reader({ user, darkMode }) {
         statusText: err.response?.statusText
       })
       showError(`Failed to load next verse: ${err.response?.data?.error || err.message}`)
-    } finally { 
+    } finally {
       setLoading(false)
       console.log('=== LOAD NEXT COMPLETE ===')
     }
@@ -198,22 +196,22 @@ export default function Reader({ user, darkMode }) {
       console.log('loadPrevious: No current verse available')
       return
     }
-    
+
     console.log('=== LOAD PREVIOUS VERSE ===')
     console.log('Current verse:', { chapter: verse.chapter, verse: verse.verse })
-    
+
     setLoading(true)
-    
+
     const requestUrl = `http://10.30.161.230:4000/api/gita/previous/${verse.chapter}/${verse.verse}`
     console.log('Request URL:', requestUrl)
-    
+
     try {
       console.log('Sending request to:', requestUrl)
       const res = await axios.get(requestUrl)
-      
+
       console.log('Response status:', res.status)
       console.log('Response data:', res.data)
-      
+
       if (res.data && res.data.chapter && res.data.verse) {
         console.log('Valid response received:', {
           chapter: res.data.chapter,
@@ -236,7 +234,7 @@ export default function Reader({ user, darkMode }) {
         statusText: err.response?.statusText
       })
       showError(`Failed to load previous verse: ${err.response?.data?.error || err.message}`)
-    } finally { 
+    } finally {
       setLoading(false)
       console.log('=== LOAD PREVIOUS COMPLETE ===')
     }
@@ -253,8 +251,8 @@ export default function Reader({ user, darkMode }) {
     } catch (err) {
       console.error(err)
       showError('Failed to continue reading')
-    } finally { 
-      setLoading(false) 
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -268,16 +266,16 @@ export default function Reader({ user, darkMode }) {
     } catch (err) {
       console.error(err)
       showError('Failed to start fresh')
-    } finally { 
-      setLoading(false) 
+    } finally {
+      setLoading(false)
     }
   }
 
   async function loadLastReadVerse() {
     console.log('=== LOAD LAST READ VERSE ===')
-    
+
     setLoading(true)
-    
+
     try {
       // First try to get the user's progress
       const token = localStorage.getItem('token')
@@ -286,35 +284,35 @@ export default function Reader({ user, darkMode }) {
         const progressRes = await axios.get('http://10.30.161.230:4000/api/user/progress', {
           headers: { Authorization: `Bearer ${token}` }
         })
-        
+
         const progress = progressRes.data.progress
         console.log('User progress:', progress)
-        
+
         if (progress && progress.last_chapter && progress.last_verse) {
           // Load the last read verse
           const verseUrl = `http://10.30.161.230:4000/api/gita/${progress.last_chapter}/${progress.last_verse}`
           console.log('Loading last read verse from:', verseUrl)
-          
+
           const verseRes = await axios.get(verseUrl)
           console.log('Last read verse loaded successfully:', verseRes.data)
-          
+
           setVerse(verseRes.data)
           setLoading(false)
           showInfo(`Continuing from Chapter ${progress.last_chapter}, Verse ${progress.last_verse}`)
           return
         }
       }
-      
+
       // Fallback: Load Chapter 1, Verse 1 for new users
       console.log('No progress found, loading Chapter 1, Verse 1 as default')
       const fallbackUrl = 'http://10.30.161.230:4000/api/gita/1/1'
       const fallbackRes = await axios.get(fallbackUrl)
       console.log('Default verse loaded successfully:', fallbackRes.data)
-      
+
       setVerse(fallbackRes.data)
       setLoading(false)
       showInfo('Welcome! Starting from the beginning - Chapter 1, Verse 1')
-      
+
     } catch (err) {
       console.error('Error loading last read verse:', err)
       showError('Failed to load verse. Please try again.')
@@ -334,43 +332,49 @@ export default function Reader({ user, darkMode }) {
     }
   }
 
-  async function loadBookmarks() {
-    try {
-      const token = localStorage.getItem('token')
-      const res = await axios.get('http://10.30.161.230:4000/api/user/bookmarks', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      setBookmarks(res.data.bookmarks)
-    } catch (err) {
-      console.error(err)
-    }
-  }
+
 
   async function bookmark() {
     if (!verse) return showError('No verse selected')
-    const token = localStorage.getItem('token')
-    if (!token) return showError('Please login first')
-    
-    try {
-      if (isBookmarked) {
-        // Remove bookmark
-        await axios.delete(`http://10.30.161.230:4000/api/user/bookmark/${verse.chapter}/${verse.verse}`, { 
-          headers: { Authorization: `Bearer ${token}` } 
-        })
-        showSuccess('📖 Bookmark removed!')
-        setIsBookmarked(false)
-      } else {
-        // Add bookmark
-        await axios.post(`http://10.30.161.230:4000/api/user/bookmark/${verse.chapter}/${verse.verse}`, {}, { 
-          headers: { Authorization: `Bearer ${token}` } 
-        })
-        showSuccess('📖 Verse bookmarked successfully!')
-        setIsBookmarked(true)
+    if (!user) return showError('Please login first')
+
+    if (onBookmarkVerse) {
+      try {
+        await onBookmarkVerse(verse)
+        if (isBookmarked) {
+          showSuccess('📖 Bookmark removed!')
+        } else {
+          showSuccess('📖 Verse bookmarked successfully!')
+        }
+        // The bookmark state will be updated through the useEffect above
+      } catch (err) {
+        console.error('Bookmark error:', err)
+        showError('Failed to update bookmark')
       }
-      loadBookmarks() // Refresh bookmarks
-    } catch (err) { 
-      console.error('Bookmark error:', err)
-      showError('Failed to update bookmark') 
+    } else {
+      // Fallback to old method
+      const token = localStorage.getItem('token')
+      if (!token) return showError('Please login first')
+
+      try {
+        if (isBookmarked) {
+          await axios.delete(`http://10.30.161.230:4000/api/user/bookmark/${verse.chapter}/${verse.verse}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          showSuccess('📖 Bookmark removed!')
+          setIsBookmarked(false)
+        } else {
+          await axios.post(`http://10.30.161.230:4000/api/user/bookmark/${verse.chapter}/${verse.verse}`, {}, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          showSuccess('📖 Verse bookmarked successfully!')
+          setIsBookmarked(true)
+        }
+
+      } catch (err) {
+        console.error('Bookmark error:', err)
+        showError('Failed to update bookmark')
+      }
     }
   }
 
@@ -378,16 +382,16 @@ export default function Reader({ user, darkMode }) {
     const token = localStorage.getItem('token')
     if (!token) return showError('Please login first')
     try {
-      await axios.post('http://10.30.161.230:4000/api/user/progress', { 
-        chapter: verse.chapter, 
-        verse: verse.verse 
-      }, { 
-        headers: { Authorization: `Bearer ${token}` } 
+      await axios.post('http://10.30.161.230:4000/api/user/progress', {
+        chapter: verse.chapter,
+        verse: verse.verse
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       })
       showSuccess('✅ Progress saved successfully!')
       loadProgress() // Refresh progress
-    } catch (err) { 
-      showError('Failed to save progress') 
+    } catch (err) {
+      showError('Failed to save progress')
     }
   }
 
@@ -399,27 +403,27 @@ export default function Reader({ user, darkMode }) {
   // Main verse loading function - optimized and centralized
   async function loadVerse(chapter, verseNum, showMessage = true) {
     if (loading) return; // Prevent multiple simultaneous loads
-    
+
     setLoading(true)
     try {
       const res = await axios.get(`http://10.30.161.230:4000/api/gita/${chapter}/${verseNum}`)
       setVerse(res.data)
-      
+
       // Update URL without page reload
       const newUrl = `/reader?chapter=${chapter}&verse=${verseNum}`
       window.history.pushState(null, '', newUrl)
-      
+
       if (showMessage) {
         showInfo(`Chapter ${chapter}, Verse ${verseNum}`)
       }
-      
+
       // Update reading progress
       updateProgress(chapter, verseNum)
     } catch (err) {
       console.error('Failed to load verse:', err)
       showError(`Failed to load Chapter ${chapter}, Verse ${verseNum}`)
-    } finally { 
-      setLoading(false) 
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -447,10 +451,10 @@ export default function Reader({ user, darkMode }) {
     if (!window.confirm('Are you sure you want to clear all bookmarks? This action cannot be undone.')) {
       return
     }
-    
+
     const token = localStorage.getItem('token')
     if (!token) return showError('Please login first')
-    
+
     try {
       // You would implement a clear all endpoint in the backend
       await axios.delete('http://10.30.161.230:4000/api/user/bookmarks', {
@@ -488,15 +492,15 @@ export default function Reader({ user, darkMode }) {
     if (!verse) return 0;
     const totalVerses = 700; // Approximate total verses in Gita
     let completedVerses = 0;
-    
+
     // Add verses from completed chapters
     for (let i = 1; i < verse.chapter; i++) {
       completedVerses += getChapterVerseCount(i);
     }
-    
+
     // Add verses from current chapter
     completedVerses += verse.verse;
-    
+
     return Math.round((completedVerses / totalVerses) * 100);
   }
 
@@ -509,7 +513,7 @@ export default function Reader({ user, darkMode }) {
   // Update reading progress
   async function updateProgress(chapter, verse) {
     if (!user) return
-    
+
     try {
       const token = localStorage.getItem('token')
       await axios.post('http://10.30.161.230:4000/api/user/progress', {
@@ -526,43 +530,43 @@ export default function Reader({ user, darkMode }) {
   // Get current Hindi translation - Swami Ramsukhdas
   function getCurrentHindiTranslation() {
     if (!verse) return 'कोई हिंदी अनुवाद उपलब्ध नहीं';
-    
+
     // Use Swami Ramsukhdas for Hindi
     if (verse.rams && verse.rams.ht) {
       return verse.rams.ht;
     }
-    
+
     return 'कोई हिंदी अनुवाद उपलब्ध नहीं';
   }
 
   // Get current English translation - A.C. Bhaktivedanta Swami Prabhupada
   function getCurrentEnglishTranslation() {
     if (!verse) return 'No English translation available';
-    
+
     // Use A.C. Bhaktivedanta Swami Prabhupada for English
     if (verse.prabhu && verse.prabhu.ec) {
       return verse.prabhu.ec;
     }
-    
+
     return 'No English translation available';
   }
 
   // Get word-by-word English translation - from Sivananda
   function getWordByWordTranslation() {
     if (!verse) return null;
-    
+
     // Use Sivananda for word-by-word if available
     if (verse.siva && verse.siva.ec) {
       return verse.siva.ec;
     }
-    
+
     return null;
   }
 
   // Get Sanskrit commentary
   function getSanskritCommentary() {
     if (!verse) return null;
-    
+
     // Priority: sankar -> others
     const sanskritPriority = ['sankar', 'ms', 'rams'];
     for (const authorKey of sanskritPriority) {
@@ -570,7 +574,7 @@ export default function Reader({ user, darkMode }) {
         return verse[authorKey].sc;
       }
     }
-    
+
     return null;
   }
 
@@ -588,312 +592,190 @@ export default function Reader({ user, darkMode }) {
   }
 
   return (
-    <div className="reading-container">
-      {/* Main Reading Area */}
-      <div className="reading-main">
-        {loading && (
-          <div style={{ textAlign: 'center', padding: '2rem' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🕉️</div>
-            <p>Loading verse...</p>
+    <div className="reading-main">
+      {/* Progress Container */}
+      <div className="sidebar-card">
+        <div className="sidebar-title">
+          📈 Your Progress
+        </div>
+        <div className="progress-stats">
+          <div className="stat-item">
+            <div className="stat-label">Completion</div>
+            <div className="stat-value">{calculateProgress()}%</div>
           </div>
-        )}
+          <div className="stat-item">
+            <div className="stat-label">Streak</div>
+            <div className="stat-value">🔥 {getUserStreak()} days</div>
+          </div>
+          <div className="stat-item">
+            <div className="stat-label">Current</div>
+            <div className="stat-value">
+              {verse ? `Ch${verse.chapter}, V${verse.verse}` : 'Ch1, V1'}
+            </div>
+          </div>
+          <div className="stat-item">
+            <div className="stat-label">Last Read</div>
+            <div className="stat-value">
+              {progress ? `Ch${progress.last_chapter || progress.current_chapter}, V${progress.last_verse || progress.current_verse}` : 'Ch1, V1'}
+            </div>
+          </div>
+        </div>
+      </div>
 
-        {verse && (
-          <div className="daily-verse-card">
-            {/* Verse Header */}
-            <div className="verse-header">
-              <div className="verse-number">
-                Chapter {verse.chapter} • Verse {verse.verse}
-              </div>
-              <div className="chapter-name">
-                {chapterNames[verse.chapter]}
-              </div>
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '2rem' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🕉️</div>
+          <p>Loading verse...</p>
+        </div>
+      )}
+
+      {verse && (
+        <div className="daily-verse-card">
+          {/* Verse Header */}
+          <div className="verse-header">
+            <div className="verse-number">
+              Chapter {verse.chapter} • Verse {verse.verse}
+            </div>
+            <div className="chapter-name">
+              {chapterNames[verse.chapter]}
+            </div>
+          </div>
+
+          <div className="verse-content">
+            {/* Sanskrit Text */}
+            <div className="sanskrit-verse">
+              {verse.slok}
             </div>
 
-            <div className="verse-content">
-              {/* Sanskrit Text */}
-              <div className="sanskrit-verse">
-                {verse.slok}
+            {/* Transliteration */}
+            {verse.transliteration && (
+              <div className="transliteration">
+                {verse.transliteration}
+              </div>
+            )}
+
+            {/* Translation Section */}
+            <div className="translation-section">
+              <div className="translation-toggle">
+                <button
+                  className={showTranslation === 'hindi' ? 'active' : ''}
+                  onClick={() => setShowTranslation('hindi')}
+                >
+                  🌸 Hindi
+                </button>
+                <button
+                  className={showTranslation === 'english' ? 'active' : ''}
+                  onClick={() => setShowTranslation('english')}
+                >
+                  📖 English
+                </button>
+                <button
+                  className={showTranslation === 'both' ? 'active' : ''}
+                  onClick={() => setShowTranslation('both')}
+                >
+                  🌍 Both
+                </button>
               </div>
 
-              {/* Transliteration */}
-              {verse.transliteration && (
-                <div className="transliteration">
-                  {verse.transliteration}
+              {/* Hindi Translation */}
+              {(showTranslation === 'hindi' || showTranslation === 'both') && (
+                <div className="translation-content">
+                  <div className="hindi-translation">
+                    {getCurrentHindiTranslation()}
+                  </div>
+                  <span className="translation-author">
+                    — Swami Ramsukhdas
+                  </span>
                 </div>
               )}
 
-              {/* Translation Section */}
-              <div className="translation-section">
-                <div className="translation-toggle">
-                  <button 
-                    className={showTranslation === 'hindi' ? 'active' : ''}
-                    onClick={() => setShowTranslation('hindi')}
-                  >
-                    🌸 Hindi
-                  </button>
-                  <button 
-                    className={showTranslation === 'english' ? 'active' : ''}
-                    onClick={() => setShowTranslation('english')}
-                  >
-                    📖 English
-                  </button>
-                  <button 
-                    className={showTranslation === 'both' ? 'active' : ''}
-                    onClick={() => setShowTranslation('both')}
-                  >
-                    🌍 Both
-                  </button>
+              {/* English Translation */}
+              {(showTranslation === 'english' || showTranslation === 'both') && (
+                <div className="translation-content">
+                  <div className="english-translation">
+                    {getCurrentEnglishTranslation()}
+                  </div>
+                  <span className="translation-author">
+                    — A.C. Bhaktivedanta Swami Prabhupada
+                  </span>
                 </div>
+              )}
 
-                {/* Hindi Translation */}
-                {(showTranslation === 'hindi' || showTranslation === 'both') && (
-                  <div className="translation-content">
-                    <div className="hindi-translation">
-                      {getCurrentHindiTranslation()}
-                    </div>
-                    <span className="translation-author">
-                      — Swami Ramsukhdas
-                    </span>
+              {/* Word by Word Translation */}
+              {getWordByWordTranslation() && (showTranslation === 'english' || showTranslation === 'both') && (
+                <div className="translation-content" style={{ marginTop: '20px', fontSize: '16px', fontStyle: 'italic' }}>
+                  <strong>Word by Word:</strong> {getWordByWordTranslation()}
+                  <div className="translation-author" style={{ marginTop: '8px' }}>
+                    — Swami Sivananda
                   </div>
-                )}
-
-                {/* English Translation */}
-                {(showTranslation === 'english' || showTranslation === 'both') && (
-                  <div className="translation-content">
-                    <div className="english-translation">
-                      {getCurrentEnglishTranslation()}
-                    </div>
-                    <span className="translation-author">
-                      — A.C. Bhaktivedanta Swami Prabhupada
-                    </span>
-                  </div>
-                )}
-
-                {/* Word by Word Translation */}
-                {getWordByWordTranslation() && (showTranslation === 'english' || showTranslation === 'both') && (
-                  <div className="translation-content" style={{ marginTop: '20px', fontSize: '16px', fontStyle: 'italic' }}>
-                    <strong>Word by Word:</strong> {getWordByWordTranslation()}
-                    <div className="translation-author" style={{ marginTop: '8px' }}>
-                      — Swami Sivananda
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Navigation */}
-            <div className="reading-navigation">
-              <button 
-                className="nav-button-reading" 
-                onClick={loadPrevious}
-                disabled={loading || (verse.chapter === 1 && verse.verse === 1)}
-              >
-                ← Previous
-              </button>
-              
-              <button 
-                className="nav-button-reading" 
-                onClick={loadNext}
-                disabled={loading || (verse.chapter === 18 && verse.verse === 78)}
-              >
-                Next →
-              </button>
-            </div>
-
-
-
-            {/* Progress Bar */}
-            <div className="reading-progress-bar">
-              <div 
-                className="progress-bar" 
-                style={{ 
-                  width: `${((verse.chapter - 1) * 100 + (verse.verse / getChapterVerseCount(verse.chapter) * 100)) / 18}%` 
-                }}
-              />
-              <span className="progress-text">
-                {Math.round(((verse.chapter - 1) * 100 + (verse.verse / getChapterVerseCount(verse.chapter) * 100)) / 18)}% Complete
-              </span>
+                </div>
+              )}
             </div>
           </div>
-        )}
 
-        {!verse && !loading && (
-          <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
-            <div style={{ fontSize: '4rem', marginBottom: '2rem' }}>🕉️</div>
-            <h2>Welcome to GitaPath</h2>
-            <p style={{ marginBottom: '2rem', color: 'var(--text-secondary)' }}>
-              Begin your spiritual journey with the eternal wisdom of the Bhagavad Gita
-            </p>
-            <button className="nav-button-reading" onClick={loadLastReadVerse}>
-              Start Reading
+          {/* Navigation */}
+          <div className="page-navigation">
+            <button
+              className="nav-button"
+              onClick={loadPrevious}
+              disabled={loading || (verse.chapter === 1 && verse.verse === 1)}
+            >
+              ← Previous
             </button>
-          </div>
-        )}
-      </div>
-
-      {/* Sidebar */}
-      <div className="reading-sidebar">
-        {/* Progress & Streak */}
-        <div className="sidebar-card">
-          <div className="sidebar-title">
-            📈 Your Progress
-          </div>
-          <div className="progress-stats">
-            <div className="stat-item">
-              <div className="stat-label">Completion</div>
-              <div className="stat-value">{calculateProgress()}%</div>
-              <div className="progress-bar">
-                <div 
-                  className="progress-fill" 
-                  style={{ width: `${calculateProgress()}%` }}
-                ></div>
-              </div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-label">Streak</div>
-              <div className="stat-value">🔥 {getUserStreak()} days</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-label">Current</div>
-              <div className="stat-value">
-                {verse ? `${verse.chapter}.${verse.verse}` : '1.1'}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bookmark Button */}
-        <div className="sidebar-card">
-          <div className="sidebar-title">
-            📖 Current Verse
-          </div>
-          <button 
-            className={`bookmark-button ${isBookmarked ? 'bookmarked' : ''}`}
-            onClick={bookmark}
-            disabled={!verse}
-          >
-            {isBookmarked ? '⭐ Bookmarked' : '☆ Bookmark'}
-          </button>
-        </div>
-
-        {/* Reading Controls */}
-        <div className="sidebar-card">
-          <div className="sidebar-title">
-            🎯 Quick Actions
-          </div>
-          <div className="utility-buttons">
-            <button 
-              className="utility-button start-beginning"
+            <button
+              className="nav-button restart-btn"
               onClick={handleStartFromBeginning}
             >
-              🏁 Start from Beginning
+              🔄 Restart
             </button>
-            {bookmarks.length > 0 && (
-              <button 
-                className="utility-button clear-bookmarks"
-                onClick={handleClearBookmarks}
-              >
-                🗑️ Clear All Bookmarks
-              </button>
-            )}
-          </div>
-        </div>
-
-
-
-        {/* Chapter & Verse Navigation */}
-        <div className="sidebar-card">
-          <div className="sidebar-title">
-            📚 Quick Navigation
-          </div>
-          
-          {/* Chapter Selection */}
-          <div className="navigation-section">
-            <label className="nav-label">Chapter</label>
-            <select 
-              className="chapter-select"
-              value={verse?.chapter || 1}
-              onChange={(e) => loadSpecificVerse(parseInt(e.target.value), 1)}
+            <button
+              className={`nav-button bookmark-btn ${isBookmarked ? 'bookmarked' : ''}`}
+              onClick={bookmark}
+              disabled={!verse}
             >
-              {Array.from({ length: 18 }, (_, i) => i + 1).map(chapterNum => (
-                <option key={chapterNum} value={chapterNum}>
-                  Chapter {chapterNum}
-                </option>
-              ))}
-            </select>
+              {isBookmarked ? '⭐ Saved' : '☆ Save'}
+            </button>
+
+            <button
+              className="nav-button"
+              onClick={loadNext}
+              disabled={loading || (verse.chapter === 18 && verse.verse === 78)}
+            >
+              Next →
+            </button>
           </div>
 
-          {/* Verse Navigation for Current Chapter */}
-          {verse && (
-            <div className="navigation-section">
-              <label className="nav-label">
-                Verses in Chapter {verse.chapter}
-              </label>
-              <div className="verse-grid">
-                {Array.from({ length: getChapterVerseCount(verse.chapter) }, (_, i) => i + 1).map(verseNum => (
-                  <button
-                    key={verseNum}
-                    className={`verse-button ${verse?.verse === verseNum ? 'current' : ''}`}
-                    onClick={() => loadSpecificVerse(verse.chapter, verseNum)}
-                  >
-                    {verseNum}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
 
-        {/* Quick Bookmarks */}
-        <div className="sidebar-card">
-          <div className="sidebar-title">
-            ⭐ Recent Bookmarks
-          </div>
-          {bookmarks.slice(0, 5).map((bookmark) => (
+
+          {/* Progress Bar */}
+          <div className="reading-progress-bar">
             <div
-              key={bookmark.id}
+              className="progress-bar"
               style={{
-                padding: '8px 12px',
-                background: 'var(--bg-secondary)',
-                borderRadius: '6px',
-                marginBottom: '8px',
-                cursor: 'pointer',
-                fontSize: '14px'
+                width: `${((verse.chapter - 1) * 100 + (verse.verse / getChapterVerseCount(verse.chapter) * 100)) / 18}%`
               }}
-              onClick={() => loadBookmarkedVerse(bookmark.chapter, bookmark.verse)}
-            >
-              {bookmark.chapter}.{bookmark.verse}
-            </div>
-          ))}
-          {bookmarks.length === 0 && (
-            <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
-              No bookmarks yet
-            </p>
-          )}
-        </div>
-
-
-
-        {/* Reading Progress */}
-        {progress && (
-          <div className="sidebar-card">
-            <div className="sidebar-title">
-              📊 Progress
-            </div>
-            <p style={{ fontSize: '14px', marginBottom: '10px' }}>
-              Last read: {progress.last_chapter}.{progress.last_verse}
-            </p>
-            <button 
-              className="nav-button-reading" 
-              onClick={continueReading}
-              style={{ width: '100%', fontSize: '14px', padding: '8px 16px' }}
-            >
-              Continue Reading
-            </button>
+            />
+            <span className="progress-text">
+              {Math.round(((verse.chapter - 1) * 100 + (verse.verse / getChapterVerseCount(verse.chapter) * 100)) / 18)}% Complete
+            </span>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {!verse && !loading && (
+        <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '2rem' }}>🕉️</div>
+          <h2>Welcome to GitaPath</h2>
+          <p style={{ marginBottom: '2rem', color: 'var(--text-secondary)' }}>
+            Begin your spiritual journey with the eternal wisdom of the Bhagavad Gita
+          </p>
+          <button className="nav-button-reading" onClick={loadLastReadVerse}>
+            Start Reading
+          </button>
+        </div>
+      )}
+
+
     </div>
   )
 }

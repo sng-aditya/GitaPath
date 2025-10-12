@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 
-export default function LandingPage({ onLogin, user, showLoginModal, setShowLoginModal, showSignupModal, setShowSignupModal }) {
+export default function LandingPage({ onLogin, user, showLoginModal, setShowLoginModal, showSignupModal, setShowSignupModal, onBookmarkVerse, isBookmarked }) {
   console.log('LandingPage component loaded!')
   const [verse, setVerse] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -177,7 +177,6 @@ export default function LandingPage({ onLogin, user, showLoginModal, setShowLogi
             ) : (
               <>
                 <button className="btn btn-primary" onClick={() => setShowSignupModal(true)}>Start Your Journey</button>
-                <button className="btn btn-secondary" onClick={() => document.getElementById('daily-verse').scrollIntoView({behavior: 'smooth'})}>Today's Verse</button>
               </>
             )}
           </div>
@@ -211,13 +210,17 @@ export default function LandingPage({ onLogin, user, showLoginModal, setShowLogi
               <div className="translations">
                 <div className="translation-card">
                   <h3>📖 English Translation</h3>
-                  <p>{(verse || fallbackVerse).siva?.et || (verse || fallbackVerse).purohit?.et || 'No translation available'}</p>
+                  <div className="translation-text">
+                    <p>{(verse || fallbackVerse).siva?.et || (verse || fallbackVerse).purohit?.et || 'No translation available'}</p>
+                  </div>
                   <span className="translation-author">— Swami Sivananda</span>
                 </div>
 
                 <div className="translation-card">
                   <h3>💡 Modern Life Application</h3>
-                  <p>{randomInterpretation}</p>
+                  <div className="translation-text">
+                    <p>{randomInterpretation}</p>
+                  </div>
                 </div>
               </div>
 
@@ -228,9 +231,18 @@ export default function LandingPage({ onLogin, user, showLoginModal, setShowLogi
                 <button className="btn btn-secondary" onClick={getNewVerse} disabled={loading}>
                   {loading ? <div className="loading"></div> : <><i className="fas fa-refresh"></i> New Verse</>}
                 </button>
-                <button className="btn btn-secondary" onClick={() => setShowSignupModal(true)}>
-                  <i className="fas fa-heart"></i> Save (Sign Up)
-                </button>
+                {user ? (
+                  <button 
+                    className={`btn ${isBookmarked(verse?.chapter, verse?.verse) ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => onBookmarkVerse(verse)}
+                  >
+                    <i className="fas fa-heart"></i> {isBookmarked(verse?.chapter, verse?.verse) ? 'Saved' : 'Save'}
+                  </button>
+                ) : (
+                  <button className="btn btn-secondary" onClick={() => setShowSignupModal(true)}>
+                    <i className="fas fa-heart"></i> Save (Sign Up)
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -298,7 +310,7 @@ export default function LandingPage({ onLogin, user, showLoginModal, setShowLogi
       </section>
 
       {/* Login Modal */}
-      <div className={`modal ${showLoginModal ? 'show' : ''}`}>
+      <div className={`modal ${showLoginModal ? 'show' : ''}`} onClick={(e) => e.target.classList.contains('modal') && setShowLoginModal(false)}>
         <div className="modal-content">
           <div className="modal-header">
             <h2>Welcome Back</h2>

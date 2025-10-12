@@ -1,8 +1,10 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 export default function Chapters() {
   const navigate = useNavigate()
+  const [showVerseModal, setShowVerseModal] = useState(false)
+  const [selectedChapter, setSelectedChapter] = useState(null)
 
   const chapters = [
     { number: 1, sanskrit: "अर्जुनविषादयोग", english: "Arjuna Vishada Yoga", meaning: "The Yoga of Arjuna's Dejection", verses: 47 },
@@ -25,8 +27,19 @@ export default function Chapters() {
     { number: 18, sanskrit: "मोक्षसंन्यासयोग", english: "Moksha Sannyasa Yoga", meaning: "The Yoga of Liberation and Renunciation", verses: 78 }
   ]
 
-  const handleChapterClick = (chapterNumber) => {
-    navigate(`/reader?chapter=${chapterNumber}&verse=1`)
+  const handleChapterClick = (chapter) => {
+    setSelectedChapter(chapter)
+    setShowVerseModal(true)
+  }
+
+  const handleVerseSelect = (verseNumber) => {
+    navigate(`/reader?chapter=${selectedChapter.number}&verse=${verseNumber}`)
+    setShowVerseModal(false)
+  }
+
+  const getChapterVerseCount = (chapterNumber) => {
+    const verseCounts = [47, 72, 43, 42, 29, 47, 30, 28, 34, 42, 55, 20, 34, 27, 20, 24, 28, 78]
+    return verseCounts[chapterNumber - 1] || 47
   }
 
   return (
@@ -34,7 +47,7 @@ export default function Chapters() {
       <div className="container">
         <div className="chapters-page">
           <div className="page-header">
-            <h1>📚 All Chapters</h1>
+            <h1>All Chapters</h1>
             <p className="page-subtitle">
               The Bhagavad Gita contains 18 chapters with 700 verses of divine wisdom
             </p>
@@ -45,7 +58,7 @@ export default function Chapters() {
               <div
                 key={chapter.number}
                 className="chapter-card"
-                onClick={() => handleChapterClick(chapter.number)}
+                onClick={() => handleChapterClick(chapter)}
               >
                 <div className="chapter-header">
                   <span className="chapter-number-badge">{chapter.number}</span>
@@ -98,6 +111,33 @@ export default function Chapters() {
               </div>
             </div>
           </div>
+
+          {/* Verse Selection Modal */}
+          {showVerseModal && selectedChapter && (
+            <div className="modal show">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h2>Select Verse - Chapter {selectedChapter.number}</h2>
+                  <span className="close" onClick={() => setShowVerseModal(false)}>&times;</span>
+                </div>
+                <div className="modal-body">
+                  <p><strong>{selectedChapter.sanskrit}</strong></p>
+                  <p>{selectedChapter.meaning}</p>
+                  <div className="verse-grid">
+                    {Array.from({ length: getChapterVerseCount(selectedChapter.number) }, (_, i) => i + 1).map(verseNum => (
+                      <button
+                        key={verseNum}
+                        className="verse-button"
+                        onClick={() => handleVerseSelect(verseNum)}
+                      >
+                        {verseNum}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
