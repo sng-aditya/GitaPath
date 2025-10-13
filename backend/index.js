@@ -1,14 +1,21 @@
 const express = require('express');
 const cors = require('cors');
+const connectDB = require('./db/mongodb');
 const logger = require('./utils/logger');
 const authRouter = require('./routes/auth');
 const userRouter = require('./routes/user');
 const gitaRouter = require('./routes/gita');
 
+// Connect to MongoDB
+connectDB();
+
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [process.env.FRONTEND_URL, 'https://gitapath.netlify.app'],
+  credentials: true
+}));
 app.use(express.json());
 
 // Request logging middleware
@@ -37,7 +44,6 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, '0.0.0.0', () => {
-  logger.info(`Backend server started on http://0.0.0.0:${PORT}`);
-  logger.info(`Access from network: http://10.30.161.230:${PORT}`);
+app.listen(PORT, () => {
+  logger.info(`Backend server started on port ${PORT}`);
 });

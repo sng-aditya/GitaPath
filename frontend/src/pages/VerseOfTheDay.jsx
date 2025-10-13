@@ -41,7 +41,7 @@ export default function VerseOfTheDay({ user }) {
 
   async function loadDailyVerse() {
     try {
-      const res = await axios.get('http://10.30.161.230:4000/api/gita/random')
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/gita/random`)
       setDailyVerse(res.data)
     } catch (err) {
       console.error('Failed to load daily verse:', err)
@@ -56,7 +56,7 @@ export default function VerseOfTheDay({ user }) {
     
     try {
       const token = localStorage.getItem('token')
-      const res = await axios.get('http://10.30.161.230:4000/api/user/bookmarks', {
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmarks`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       const bookmarked = res.data.bookmarks.some(
@@ -74,13 +74,13 @@ export default function VerseOfTheDay({ user }) {
     const token = localStorage.getItem('token')
     try {
       if (isBookmarked) {
-        await axios.delete(`http://10.30.161.230:4000/api/user/bookmark/${dailyVerse.chapter}/${dailyVerse.verse}`, {
+        await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmark/${dailyVerse.chapter}/${dailyVerse.verse}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
         setIsBookmarked(false)
         showSuccess('Bookmark removed!')
       } else {
-        await axios.post(`http://10.30.161.230:4000/api/user/bookmark/${dailyVerse.chapter}/${dailyVerse.verse}`, {}, {
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmark/${dailyVerse.chapter}/${dailyVerse.verse}`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         })
         setIsBookmarked(true)

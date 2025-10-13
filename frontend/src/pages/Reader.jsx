@@ -84,7 +84,7 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
 
   async function loadDailyVerse() {
     try {
-      const res = await axios.get('http://10.30.161.230:4000/api/gita/random')
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/gita/random`)
       setDailyVerse(res.data)
     } catch (err) {
       console.error('Failed to load daily verse:', err)
@@ -104,7 +104,7 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
 
     setLoading(true)
 
-    const requestUrl = 'http://10.30.161.230:4000/api/gita/random'
+    const requestUrl = `${import.meta.env.VITE_API_BASE_URL}/api/gita/random`
     console.log('Request URL:', requestUrl)
 
     try {
@@ -153,7 +153,7 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
 
     setLoading(true)
 
-    const requestUrl = `http://10.30.161.230:4000/api/gita/next/${verse.chapter}/${verse.verse}`
+    const requestUrl = `${import.meta.env.VITE_API_BASE_URL}/api/gita/next/${verse.chapter}/${verse.verse}`
     console.log('Request URL:', requestUrl)
 
     try {
@@ -202,7 +202,7 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
 
     setLoading(true)
 
-    const requestUrl = `http://10.30.161.230:4000/api/gita/previous/${verse.chapter}/${verse.verse}`
+    const requestUrl = `${import.meta.env.VITE_API_BASE_URL}/api/gita/previous/${verse.chapter}/${verse.verse}`
     console.log('Request URL:', requestUrl)
 
     try {
@@ -244,7 +244,7 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
     if (!progress) return
     setLoading(true)
     try {
-      const res = await axios.get(`http://10.30.161.230:4000/api/gita/${progress.current_chapter}/${progress.current_verse}`)
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/gita/${progress.current_chapter}/${progress.current_verse}`)
       setVerse(res.data)
       setActiveTab('reader')
       showSuccess('Continued from where you left off!')
@@ -259,7 +259,7 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
   async function startFresh() {
     setLoading(true)
     try {
-      const res = await axios.get('http://10.30.161.230:4000/api/gita/1/1')
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/gita/1/1`)
       setVerse(res.data)
       setActiveTab('reader')
       showInfo('Starting fresh from Chapter 1, Verse 1')
@@ -281,7 +281,7 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
       const token = localStorage.getItem('token')
       if (token) {
         console.log('Fetching user progress to find last read verse')
-        const progressRes = await axios.get('http://10.30.161.230:4000/api/user/progress', {
+        const progressRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/progress`, {
           headers: { Authorization: `Bearer ${token}` }
         })
 
@@ -290,7 +290,7 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
 
         if (progress && progress.last_chapter && progress.last_verse) {
           // Load the last read verse
-          const verseUrl = `http://10.30.161.230:4000/api/gita/${progress.last_chapter}/${progress.last_verse}`
+          const verseUrl = `${import.meta.env.VITE_API_BASE_URL}/api/gita/${progress.last_chapter}/${progress.last_verse}`
           console.log('Loading last read verse from:', verseUrl)
 
           const verseRes = await axios.get(verseUrl)
@@ -305,7 +305,7 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
 
       // Fallback: Load Chapter 1, Verse 1 for new users
       console.log('No progress found, loading Chapter 1, Verse 1 as default')
-      const fallbackUrl = 'http://10.30.161.230:4000/api/gita/1/1'
+      const fallbackUrl = `${import.meta.env.VITE_API_BASE_URL}/api/gita/1/1`
       const fallbackRes = await axios.get(fallbackUrl)
       console.log('Default verse loaded successfully:', fallbackRes.data)
 
@@ -323,7 +323,7 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
   async function loadProgress() {
     try {
       const token = localStorage.getItem('token')
-      const res = await axios.get('http://10.30.161.230:4000/api/user/progress', {
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/progress`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setProgress(res.data.progress)
@@ -358,13 +358,13 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
 
       try {
         if (isBookmarked) {
-          await axios.delete(`http://10.30.161.230:4000/api/user/bookmark/${verse.chapter}/${verse.verse}`, {
+          await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmark/${verse.chapter}/${verse.verse}`, {
             headers: { Authorization: `Bearer ${token}` }
           })
           showSuccess('📖 Bookmark removed!')
           setIsBookmarked(false)
         } else {
-          await axios.post(`http://10.30.161.230:4000/api/user/bookmark/${verse.chapter}/${verse.verse}`, {}, {
+          await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmark/${verse.chapter}/${verse.verse}`, {}, {
             headers: { Authorization: `Bearer ${token}` }
           })
           showSuccess('📖 Verse bookmarked successfully!')
@@ -382,7 +382,7 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
     const token = localStorage.getItem('token')
     if (!token) return showError('Please login first')
     try {
-      await axios.post('http://10.30.161.230:4000/api/user/progress', {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user/progress`, {
         chapter: verse.chapter,
         verse: verse.verse
       }, {
@@ -406,7 +406,7 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
 
     setLoading(true)
     try {
-      const res = await axios.get(`http://10.30.161.230:4000/api/gita/${chapter}/${verseNum}`)
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/gita/${chapter}/${verseNum}`)
       setVerse(res.data)
 
       // Update URL without page reload
@@ -457,7 +457,7 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
 
     try {
       // You would implement a clear all endpoint in the backend
-      await axios.delete('http://10.30.161.230:4000/api/user/bookmarks', {
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmarks`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       showSuccess('All bookmarks cleared!')
@@ -516,7 +516,7 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
 
     try {
       const token = localStorage.getItem('token')
-      await axios.post('http://10.30.161.230:4000/api/user/progress', {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user/progress`, {
         chapter,
         verse
       }, {

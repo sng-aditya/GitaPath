@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import LandingPage from './pages/LandingPage'
-import TestLanding from './pages/TestLanding'
 import Reader from './pages/Reader'
 import About from './pages/About'
 import VerseOfTheDay from './pages/VerseOfTheDay'
@@ -64,7 +63,7 @@ export default function App(){
     }
 
     try {
-      const res = await axios.get('http://10.30.161.230:4000/api/auth/me', {
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setUser(res.data.user)
@@ -78,14 +77,14 @@ export default function App(){
     if (!user) return
     try {
       const token = localStorage.getItem('token')
-      const res = await axios.get('http://10.30.161.230:4000/api/user/bookmarks', {
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmarks`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       
       const bookmarksWithSlokas = await Promise.all(
         (res.data.bookmarks || []).map(async (bookmark) => {
           try {
-            const verseRes = await axios.get(`http://10.30.161.230:4000/api/gita/slok/${bookmark.chapter}/${bookmark.verse}`)
+            const verseRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/gita/slok/${bookmark.chapter}/${bookmark.verse}`)
             return {
               ...bookmark,
               slok: verseRes.data.slok
@@ -114,13 +113,13 @@ export default function App(){
       
       if (isCurrentlyBookmarked) {
         // Remove bookmark
-        await axios.delete(`http://10.30.161.230:4000/api/user/bookmark/${verse.chapter}/${verse.verse}`, {
+        await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmark/${verse.chapter}/${verse.verse}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
         setBookmarks(prev => prev.filter(b => !(b.chapter === verse.chapter && b.verse === verse.verse)))
       } else {
         // Add bookmark
-        await axios.post(`http://10.30.161.230:4000/api/user/bookmark/${verse.chapter}/${verse.verse}`, {
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmark/${verse.chapter}/${verse.verse}`, {
           slok: verse.slok,
           translation: verse.siva?.et || verse.purohit?.et || 'No translation available'
         }, {
@@ -148,7 +147,7 @@ export default function App(){
   async function handleDeleteBookmark(chapter, verse) {
     try {
       const token = localStorage.getItem('token')
-      await axios.delete(`http://10.30.161.230:4000/api/user/bookmark/${chapter}/${verse}`, {
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmark/${chapter}/${verse}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setBookmarks(prev => prev.filter(b => !(b.chapter === chapter && b.verse === verse)))
@@ -171,7 +170,7 @@ export default function App(){
     // Check if user has progress
     try {
       const token = localStorage.getItem('token')
-      const res = await axios.get('http://10.30.161.230:4000/api/user/progress', {
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/progress`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       
@@ -261,12 +260,12 @@ export default function App(){
                 e.preventDefault()
                 const formData = new FormData(e.target)
                 try {
-                  const res = await axios.post('http://10.30.161.230:4000/api/auth/login', {
+                  const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/login`, {
                     email: formData.get('email'),
                     password: formData.get('password')
                   })
                   localStorage.setItem('token', res.data.token)
-                  const userRes = await axios.get('http://10.30.161.230:4000/api/auth/me', {
+                  const userRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/auth/me`, {
                     headers: { Authorization: `Bearer ${res.data.token}` }
                   })
                   handleLogin(userRes.data.user)
@@ -303,13 +302,13 @@ export default function App(){
                 e.preventDefault()
                 const formData = new FormData(e.target)
                 try {
-                  const res = await axios.post('http://10.30.161.230:4000/api/auth/signup', {
+                  const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/signup`, {
                     name: formData.get('name'),
                     email: formData.get('email'),
                     password: formData.get('password')
                   })
                   localStorage.setItem('token', res.data.token)
-                  const userRes = await axios.get('http://10.30.161.230:4000/api/auth/me', {
+                  const userRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/auth/me`, {
                     headers: { Authorization: `Bearer ${res.data.token}` }
                   })
                   handleLogin(userRes.data.user)
