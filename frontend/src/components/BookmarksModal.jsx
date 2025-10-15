@@ -1,7 +1,8 @@
 import React from 'react'
 import './BookmarksModal.css'
+import BookmarkActions from './BookmarkActions'
 
-export default function BookmarksModal({ isOpen, onClose, bookmarks, onDeleteBookmark, onNavigateToVerse }) {
+export default function BookmarksModal({ isOpen, onClose, bookmarks, onDeleteBookmark, onNavigateToVerse, onClearBookmarks }) {
   if (!isOpen) return null
 
   return (
@@ -13,6 +14,12 @@ export default function BookmarksModal({ isOpen, onClose, bookmarks, onDeleteBoo
         </div>
         
         <div className="bookmarks-modal-body">
+          {/* Bookmark Actions */}
+          <BookmarkActions 
+            bookmarks={bookmarks}
+            onClear={onClearBookmarks}
+          />
+          
           {bookmarks && bookmarks.length > 0 ? (
             <div className="bookmarks-grid">
               {bookmarks.map((bookmark) => (

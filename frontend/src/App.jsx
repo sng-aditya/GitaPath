@@ -8,7 +8,7 @@ import Chapters from './pages/Chapters'
 import Donate from './pages/Donate'
 import Header from './components/Header'
 import Footer from './components/Footer'
-import BookmarksModal from './components/BookmarksModal'
+import SimpleBookmarksModal from './components/SimpleBookmarksModal'
 import { SnackbarProvider } from './components/SnackbarProvider'
 import axios from 'axios'
 
@@ -118,10 +118,12 @@ export default function App(){
         })
         setBookmarks(prev => prev.filter(b => !(b.chapter === verse.chapter && b.verse === verse.verse)))
       } else {
-        // Add bookmark
+        // Add bookmark with proper translation priority
+        const translation = verse.rams?.ht || verse.prabhu?.ec || verse.siva?.et || verse.chinmay?.ht || 'No translation available'
+        
         await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmark/${verse.chapter}/${verse.verse}`, {
           slok: verse.slok,
-          translation: verse.siva?.et || verse.purohit?.et || 'No translation available'
+          translation: translation
         }, {
           headers: { Authorization: `Bearer ${token}` }
         })
@@ -130,13 +132,14 @@ export default function App(){
           chapter: verse.chapter,
           verse: verse.verse,
           slok: verse.slok,
-          translation: verse.siva?.et || verse.purohit?.et || 'No translation available'
+          translation: translation,
+          createdAt: new Date().toISOString()
         }
-        setBookmarks(prev => [...prev, newBookmark])
+        setBookmarks(prev => [newBookmark, ...prev])
       }
     } catch (err) {
       console.error('Failed to bookmark verse:', err)
-      alert('Failed to bookmark verse. Please try again.')
+      throw err // Re-throw to let the calling component handle the error
     }
   }
 
@@ -162,22 +165,36 @@ export default function App(){
     navigate(`/reader?chapter=${chapter}&verse=${verse}`)
   }
 
+  async function handleClearBookmarks() {
+    try {
+      const token = localStorage.getItem('token')
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmarks`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setBookmarks([])
+    } catch (err) {
+      console.error('Failed to clear bookmarks:', err)
+      alert('Failed to clear bookmarks. Please try again.')
+    }
+  }
+
   async function handleLogin(userData) {
     setUser(userData)
     setShowLoginModal(false)
     setShowSignupModal(false)
     
-    // Check if user has progress
+    // Check if user has progress and redirect to last read position
     try {
       const token = localStorage.getItem('token')
       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/progress`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       
-      if (res.data.progress && (res.data.progress.last_chapter || res.data.progress.current_chapter)) {
-        // User has progress, redirect to their last position
-        const chapter = res.data.progress.last_chapter || res.data.progress.current_chapter
-        const verse = res.data.progress.last_verse || res.data.progress.current_verse || 1
+      const progress = res.data.progress
+      if (progress) {
+        // Prioritize last_chapter/last_verse, fallback to current_chapter/current_verse
+        const chapter = progress.last_chapter || progress.current_chapter || 1
+        const verse = progress.last_verse || progress.current_verse || 1
         navigate(`/reader?chapter=${chapter}&verse=${verse}`)
       } else {
         // New user, start from beginning
@@ -250,7 +267,7 @@ export default function App(){
 
         {/* Login Modal */}
         <div className={`modal ${showLoginModal ? 'show' : ''}`}>
-          <div className="modal-content">
+          <div className="modal-content auth-modal">
             <div className="modal-header">
               <h2>Welcome Back</h2>
               <span className="close" onClick={() => setShowLoginModal(false)}>&times;</span>
@@ -292,7 +309,7 @@ export default function App(){
 
         {/* Signup Modal */}
         <div className={`modal ${showSignupModal ? 'show' : ''}`}>
-          <div className="modal-content">
+          <div className="modal-content auth-modal">
             <div className="modal-header">
               <h2>Join the Journey</h2>
               <span className="close" onClick={() => setShowSignupModal(false)}>&times;</span>
@@ -338,12 +355,10 @@ export default function App(){
         </div>
 
         {/* Bookmarks Modal */}
-        <BookmarksModal 
+        <SimpleBookmarksModal 
           isOpen={showBookmarksModal}
           onClose={() => setShowBookmarksModal(false)}
           bookmarks={bookmarks}
-          onDeleteBookmark={handleDeleteBookmark}
-          onNavigateToVerse={handleNavigateToVerse}
         />
 
         {/* Floating Theme Toggle */}

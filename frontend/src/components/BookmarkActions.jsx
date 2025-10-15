@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './BookmarkActions.css';
+import ConfirmationModal from './ConfirmationModal';
 
 const BookmarkActions = ({ bookmarks, onExport, onImport, onClear, loading = false }) => {
   const handleExportJSON = () => {
@@ -72,6 +73,17 @@ const BookmarkActions = ({ bookmarks, onExport, onImport, onClear, loading = fal
     event.target.value = ''; // Reset input
   };
 
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  const handleClearAll = () => {
+    setShowClearConfirm(true);
+  };
+
+  const confirmClear = () => {
+    setShowClearConfirm(false);
+    onClear && onClear();
+  };
+
   return (
     <div className="bookmark-actions">
       <div className="actions-header">
@@ -127,7 +139,7 @@ const BookmarkActions = ({ bookmarks, onExport, onImport, onClear, loading = fal
           <div className="action-buttons">
             <button 
               className="action-btn clear-btn"
-              onClick={onClear}
+              onClick={handleClearAll}
               disabled={loading || bookmarks.length === 0}
               title="Clear all bookmarks"
             >
@@ -143,6 +155,16 @@ const BookmarkActions = ({ bookmarks, onExport, onImport, onClear, loading = fal
           <p>📖 No bookmarks yet. Start reading and save your favorite verses!</p>
         </div>
       )}
+      
+      <ConfirmationModal 
+        isOpen={showClearConfirm}
+        onClose={() => setShowClearConfirm(false)}
+        onConfirm={confirmClear}
+        title="Clear All Bookmarks"
+        message="Are you sure you want to clear all bookmarks? This action cannot be undone."
+        confirmText="Clear All"
+        cancelText="Cancel"
+      />
     </div>
   );
 };

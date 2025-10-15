@@ -114,7 +114,7 @@ export default function Header({ user, onLogout, darkMode, onToggleDarkMode, onS
       <nav className="header-nav">
         <div className="nav-left">
           <div className="logo" onClick={handleLogoClick}>
-            🕉️ GitaPath
+            ॐ GitaPath
           </div>
         </div>
         

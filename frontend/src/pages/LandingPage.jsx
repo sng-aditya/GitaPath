@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import StartReadingModal from '../components/StartReadingModal'
 
 export default function LandingPage({ onLogin, user, showLoginModal, setShowLoginModal, showSignupModal, setShowSignupModal, onBookmarkVerse, isBookmarked }) {
   console.log('LandingPage component loaded!')
+  const navigate = useNavigate()
   const [verse, setVerse] = useState(null)
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState(null)
+  const [showStartModal, setShowStartModal] = useState(false)
+  const [startLoading, setStartLoading] = useState(false)
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('')
@@ -29,7 +34,7 @@ export default function LandingPage({ onLogin, user, showLoginModal, setShowLogi
     if (!user) return
     try {
       const token = localStorage.getItem('token')
-      const res = await axios.get('http://10.30.161.230:4000/api/user/progress', {
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/progress`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setProgress(res.data.progress)
@@ -49,10 +54,24 @@ export default function LandingPage({ onLogin, user, showLoginModal, setShowLogi
 
   async function loadDailyVerse() {
     try {
-      const chapter = Math.floor(Math.random() * 18) + 1
-      const verse = Math.floor(Math.random() * 40) + 1
-      const res = await axios.get(`http://10.30.161.230:4000/api/gita/${chapter}/${verse}`)
-      setVerse(res.data)
+      let dailyVerseData;
+      
+      if (user) {
+        // Get personalized daily verse for logged-in users
+        const token = localStorage.getItem('token')
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/verse-of-day`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        dailyVerseData = res.data
+      } else {
+        // Get global daily verse for non-logged-in users
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/verse-of-day/global`)
+        dailyVerseData = res.data
+      }
+      
+      // Now fetch the actual verse content
+      const verseRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/gita/${dailyVerseData.chapter}/${dailyVerseData.verse}`)
+      setVerse(verseRes.data)
     } catch (error) {
       console.error('Error loading verse:', error)
       setVerse({
@@ -69,14 +88,14 @@ export default function LandingPage({ onLogin, user, showLoginModal, setShowLogi
     e.preventDefault()
     setLoginLoading(true)
     try {
-      const res = await axios.post('http://10.30.161.230:4000/api/auth/login', {
+      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/login`, {
         email: loginEmail,
         password: loginPassword
       })
       localStorage.setItem('token', res.data.token)
       
       // Get user data
-      const userRes = await axios.get('http://10.30.161.230:4000/api/auth/me', {
+      const userRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${res.data.token}` }
       })
       
@@ -92,7 +111,7 @@ export default function LandingPage({ onLogin, user, showLoginModal, setShowLogi
     e.preventDefault()
     setSignupLoading(true)
     try {
-      const res = await axios.post('http://10.30.161.230:4000/api/auth/signup', {
+      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/signup`, {
         name: signupName,
         email: signupEmail,
         password: signupPassword
@@ -100,7 +119,7 @@ export default function LandingPage({ onLogin, user, showLoginModal, setShowLogi
       localStorage.setItem('token', res.data.token)
       
       // Get user data
-      const userRes = await axios.get('http://10.30.161.230:4000/api/auth/me', {
+      const userRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${res.data.token}` }
       })
       
@@ -142,6 +161,26 @@ export default function LandingPage({ onLogin, user, showLoginModal, setShowLogi
 
   const randomInterpretation = interpretations[Math.floor(Math.random() * interpretations.length)]
 
+  function handleBeginReading() {
+    if (progress && (progress.last_chapter || progress.current_chapter > 1 || progress.current_verse > 1)) {
+      setShowStartModal(true)
+    } else {
+      handleStartFromBeginning()
+    }
+  }
+
+  function handleStartFromBeginning() {
+    setStartLoading(true)
+    navigate('/reader?chapter=1&verse=1')
+  }
+
+  function handleContinueReading() {
+    setStartLoading(true)
+    const chapter = progress.last_chapter || progress.current_chapter || 1
+    const verse = progress.last_verse || progress.current_verse || 1
+    navigate(`/reader?chapter=${chapter}&verse=${verse}`)
+  }
+
   return (
     <div>
       {/* Hero Section */}
@@ -152,27 +191,29 @@ export default function LandingPage({ onLogin, user, showLoginModal, setShowLogi
           <div className="cta-buttons">
             {user ? (
               <>
-                {progress ? (
-                  <button 
-                    className="btn btn-primary" 
-                    onClick={() => window.location.href = `/reader?chapter=${progress.last_chapter || progress.current_chapter}&verse=${progress.last_verse || progress.current_verse}`}
-                  >
-                    Continue Reading - Chapter {progress.last_chapter || progress.current_chapter}
-                  </button>
+                {progress && (progress.last_chapter || progress.current_chapter > 1 || progress.current_verse > 1) ? (
+                  <>
+                    <button 
+                      className="btn btn-primary" 
+                      onClick={() => setShowStartModal(true)}
+                    >
+                      Begin Reading
+                    </button>
+                    <button 
+                      className="btn btn-secondary" 
+                      onClick={handleStartFromBeginning}
+                    >
+                      Start from Beginning
+                    </button>
+                  </>
                 ) : (
                   <button 
                     className="btn btn-primary" 
-                    onClick={() => window.location.href = '/reader'}
+                    onClick={handleStartFromBeginning}
                   >
-                    Begin Reading
+                    Start from Beginning
                   </button>
                 )}
-                <button 
-                  className="btn btn-secondary" 
-                  onClick={() => window.location.href = '/reader?chapter=1&verse=1'}
-                >
-                  Start from Beginning
-                </button>
               </>
             ) : (
               <>
@@ -394,7 +435,15 @@ export default function LandingPage({ onLogin, user, showLoginModal, setShowLogi
         </div>
       </div>
 
-
+      {/* Start Reading Modal */}
+      <StartReadingModal 
+        isOpen={showStartModal}
+        onClose={() => setShowStartModal(false)}
+        onContinue={handleContinueReading}
+        onRestart={handleStartFromBeginning}
+        progress={progress}
+        loading={startLoading}
+      />
     </div>
   )
 }

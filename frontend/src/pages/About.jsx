@@ -10,7 +10,7 @@ function About() {
       {/* Hero Section */}
       <section className="about-hero">
         <div className="hero-content">
-          <div className="hero-icon">🕉️</div>
+          <div className="hero-icon">ॐ</div>
           <h1>About GitaPath</h1>
           <p className="hero-tagline">
             Your digital companion for exploring the timeless wisdom of the Bhagavad Gita

@@ -41,8 +41,24 @@ export default function VerseOfTheDay({ user }) {
 
   async function loadDailyVerse() {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/gita/random`)
-      setDailyVerse(res.data)
+      let dailyVerseData;
+      
+      if (user) {
+        // Get personalized daily verse for logged-in users
+        const token = localStorage.getItem('token')
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/verse-of-day`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        dailyVerseData = res.data
+      } else {
+        // Get global daily verse for non-logged-in users
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/verse-of-day/global`)
+        dailyVerseData = res.data
+      }
+      
+      // Now fetch the actual verse content
+      const verseRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/gita/${dailyVerseData.chapter}/${dailyVerseData.verse}`)
+      setDailyVerse(verseRes.data)
     } catch (err) {
       console.error('Failed to load daily verse:', err)
       showError('Failed to load daily verse')
@@ -120,7 +136,7 @@ export default function VerseOfTheDay({ user }) {
       <div className="page-container">
         <div className="container">
           <div className="loading-state">
-            <div className="sacred-symbol">🕉️</div>
+            <div className="sacred-symbol">ॐ</div>
             <p>Loading today's divine verse...</p>
           </div>
         </div>
@@ -133,7 +149,7 @@ export default function VerseOfTheDay({ user }) {
       <div className="container">
         <div className="verse-of-day-page">
           <div className="page-header">
-            <h1>🌅 Verse of the Day</h1>
+            <h1>Verse of the Day</h1>
             <p className="page-subtitle">
               {new Date().toLocaleDateString('en-US', { 
                 weekday: 'long', 
@@ -208,9 +224,12 @@ export default function VerseOfTheDay({ user }) {
                   </button>
                   <button 
                     className="action-btn refresh-btn"
-                    onClick={loadDailyVerse}
+                    onClick={() => {
+                      // For demonstration - in production, daily verse should remain same for the day
+                      window.location.reload()
+                    }}
                   >
-                    🔄 New Verse
+                    🔄 Refresh
                   </button>
                 </div>
               </div>

@@ -1,13 +1,18 @@
 # Dependencies
 node_modules/
 
-# Environment files
+# Environment files - All types
+.env*
 .env
 .env.local
+.env.development
 .env.production
+.env.test
+.env.staging
 .env.development.local
 .env.test.local
 .env.production.local
+.env.staging.local
 
 # Build outputs
 dist/
@@ -35,8 +40,21 @@ pids
 ehthumbs.db
 Thumbs.db
 
+# Documentation (root level only)
+/docs/
+
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+
+# Additional files to ignore
+*.tmp
+*.temp
+.cache/
+.parcel-cache/
+coverage/
+.nyc_output/
+*.tgz
+*.tar.gz

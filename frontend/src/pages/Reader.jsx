@@ -6,6 +6,8 @@ import NavigationControls from '../components/NavigationControls'
 import ReadingProgress from '../components/ReadingProgress'
 import BookmarkActions from '../components/BookmarkActions'
 import Dashboard from '../components/Dashboard'
+import RestartModal from '../components/RestartModal'
+import ConfirmationModal from '../components/ConfirmationModal'
 
 export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isBookmarked: isBookmarkedProp }) {
   const [verse, setVerse] = useState(null)
@@ -18,6 +20,8 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
   const [showGoToVerse, setShowGoToVerse] = useState(false)
   const [goToChapter, setGoToChapter] = useState(1)
   const [goToVerseNum, setGoToVerseNum] = useState(1)
+  const [showRestartModal, setShowRestartModal] = useState(false)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
   const { showSuccess, showError, showInfo } = useSnackbarContext()
 
   // Chapter names
@@ -288,9 +292,12 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
         const progress = progressRes.data.progress
         console.log('User progress:', progress)
 
-        if (progress && progress.last_chapter && progress.last_verse) {
-          // Load the last read verse
-          const verseUrl = `${import.meta.env.VITE_API_BASE_URL}/api/gita/${progress.last_chapter}/${progress.last_verse}`
+        if (progress) {
+          // Prioritize last_chapter/last_verse, fallback to current_chapter/current_verse
+          const chapter = progress.last_chapter || progress.current_chapter || 1
+          const verse = progress.last_verse || progress.current_verse || 1
+          
+          const verseUrl = `${import.meta.env.VITE_API_BASE_URL}/api/gita/${chapter}/${verse}`
           console.log('Loading last read verse from:', verseUrl)
 
           const verseRes = await axios.get(verseUrl)
@@ -298,7 +305,7 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
 
           setVerse(verseRes.data)
           setLoading(false)
-          showInfo(`Continuing from Chapter ${progress.last_chapter}, Verse ${progress.last_verse}`)
+          showInfo(`Continuing from Chapter ${chapter}, Verse ${verse}`)
           return
         }
       }
@@ -448,29 +455,36 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
   }
 
   async function handleClearBookmarks() {
-    if (!window.confirm('Are you sure you want to clear all bookmarks? This action cannot be undone.')) {
-      return
-    }
+    setShowClearConfirm(true)
+  }
 
+  async function confirmClearBookmarks() {
+    setShowClearConfirm(false)
     const token = localStorage.getItem('token')
     if (!token) return showError('Please login first')
 
     try {
-      // You would implement a clear all endpoint in the backend
       await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmarks`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       showSuccess('All bookmarks cleared!')
-      loadBookmarks()
+      // Refresh bookmarks through parent component
+      if (typeof loadBookmarks === 'function') {
+        loadBookmarks()
+      }
     } catch (err) {
       showError('Failed to clear bookmarks')
     }
   }
 
   function handleStartFromBeginning() {
-    if (window.confirm('Start reading from Chapter 1, Verse 1?')) {
-      loadVerse(1, 1)
-    }
+    setShowRestartModal(true)
+  }
+
+  function handleConfirmRestart() {
+    setShowRestartModal(false)
+    loadVerse(1, 1, true)
+    showInfo('Starting fresh from Chapter 1, Verse 1')
   }
 
   // Get verse count for a chapter (approximate counts for each chapter)
@@ -487,7 +501,7 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
     loadVerse(chapter, verse);
   }
 
-  // Calculate reading progress
+  // Calculate reading progress based on current position
   function calculateProgress() {
     if (!verse) return 0;
     const totalVerses = 700; // Approximate total verses in Gita
@@ -504,10 +518,27 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
     return Math.round((completedVerses / totalVerses) * 100);
   }
 
-  // Get user streak (placeholder - would come from backend)
+  // Calculate completion percentage based on progress data
+  function getCompletionPercentage() {
+    if (!progress || !progress.current_chapter) return 0;
+    
+    const totalVerses = 700;
+    let completedVerses = 0;
+    
+    // Add verses from completed chapters
+    for (let i = 1; i < progress.current_chapter; i++) {
+      completedVerses += getChapterVerseCount(i);
+    }
+    
+    // Add current verse
+    completedVerses += progress.current_verse || 1;
+    
+    return Math.round((completedVerses / totalVerses) * 100);
+  }
+
+  // Get user streak from progress data
   function getUserStreak() {
-    // This would come from user data/backend
-    return 5; // Placeholder
+    return progress?.streak_count || 0;
   }
 
   // Update reading progress
@@ -601,7 +632,7 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
         <div className="progress-stats">
           <div className="stat-item">
             <div className="stat-label">Completion</div>
-            <div className="stat-value">{calculateProgress()}%</div>
+            <div className="stat-value">{getCompletionPercentage()}%</div>
           </div>
           <div className="stat-item">
             <div className="stat-label">Streak</div>
@@ -610,13 +641,13 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
           <div className="stat-item">
             <div className="stat-label">Current</div>
             <div className="stat-value">
-              {verse ? `Ch${verse.chapter}, V${verse.verse}` : 'Ch1, V1'}
+              {verse ? `Ch${verse.chapter}, V${verse.verse}` : (progress ? `Ch${progress.current_chapter}, V${progress.current_verse}` : 'Ch1, V1')}
             </div>
           </div>
           <div className="stat-item">
             <div className="stat-label">Last Read</div>
             <div className="stat-value">
-              {progress ? `Ch${progress.last_chapter || progress.current_chapter}, V${progress.last_verse || progress.current_verse}` : 'Ch1, V1'}
+              {progress && progress.last_chapter ? `Ch${progress.last_chapter}, V${progress.last_verse}` : (progress ? `Ch${progress.current_chapter}, V${progress.current_verse}` : 'Ch1, V1')}
             </div>
           </div>
         </div>
@@ -624,7 +655,7 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
 
       {loading && (
         <div style={{ textAlign: 'center', padding: '2rem' }}>
-          <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🕉️</div>
+          <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>ॐ</div>
           <p>Loading verse...</p>
         </div>
       )}
@@ -764,7 +795,7 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
 
       {!verse && !loading && (
         <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
-          <div style={{ fontSize: '4rem', marginBottom: '2rem' }}>🕉️</div>
+          <div style={{ fontSize: '4rem', marginBottom: '2rem' }}>ॐ</div>
           <h2>Welcome to GitaPath</h2>
           <p style={{ marginBottom: '2rem', color: 'var(--text-secondary)' }}>
             Begin your spiritual journey with the eternal wisdom of the Bhagavad Gita
@@ -775,7 +806,24 @@ export default function Reader({ user, darkMode, bookmarks, onBookmarkVerse, isB
         </div>
       )}
 
-
+      {/* Restart Modal */}
+      <RestartModal 
+        isOpen={showRestartModal}
+        onClose={() => setShowRestartModal(false)}
+        onConfirm={handleConfirmRestart}
+        loading={loading}
+      />
+      
+      {/* Clear Bookmarks Confirmation */}
+      <ConfirmationModal 
+        isOpen={showClearConfirm}
+        onClose={() => setShowClearConfirm(false)}
+        onConfirm={confirmClearBookmarks}
+        title="Clear All Bookmarks"
+        message="Are you sure you want to clear all bookmarks? This action cannot be undone."
+        confirmText="Clear All"
+        cancelText="Cancel"
+      />
     </div>
   )
 }

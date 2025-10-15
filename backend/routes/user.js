@@ -84,6 +84,7 @@ router.post('/bookmark/:ch/:sl', auth, async (req, res) => {
   try {
     const ch = parseInt(req.params.ch, 10);
     const sl = parseInt(req.params.sl, 10);
+    const { slok, translation } = req.body;
 
     if (!ch || !sl) {
       return res.status(400).json({ error: 'Invalid chapter or verse' });
@@ -96,7 +97,13 @@ router.post('/bookmark/:ch/:sl', auth, async (req, res) => {
       return res.status(400).json({ error: 'Verse already bookmarked' });
     }
 
-    await Bookmark.create({ userId: req.userId, chapter: ch, verse: sl });
+    await Bookmark.create({ 
+      userId: req.userId, 
+      chapter: ch, 
+      verse: sl,
+      slok: slok || '',
+      translation: translation || ''
+    });
 
     res.json({ ok: true });
   } catch (error) {
@@ -145,7 +152,7 @@ router.delete('/bookmark/:chapter/:verse', auth, async (req, res) => {
   }
 });
 
-// GET /api/user/verse-of-day - Get daily verse for user
+// GET /api/user/verse-of-day - Get daily verse for user (consistent per day)
 router.get('/verse-of-day', auth, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
@@ -162,7 +169,7 @@ router.get('/verse-of-day', auth, async (req, res) => {
       });
     }
 
-    // Generate new daily verse for today
+    // Generate consistent daily verse using user ID + date as seed
     const seed = user._id.toString() + today;
     let hash = 0;
     for (let i = 0; i < seed.length; i++) {
@@ -190,6 +197,35 @@ router.get('/verse-of-day', auth, async (req, res) => {
     res.json({ chapter, verse, date: today });
   } catch (error) {
     console.error('Verse of day error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/user/verse-of-day/global - Get global daily verse (same for all users)
+router.get('/verse-of-day/global', async (req, res) => {
+  try {
+    const today = new Date().toDateString();
+    
+    // Generate consistent daily verse for all users using just the date
+    let hash = 0;
+    for (let i = 0; i < today.length; i++) {
+      const char = today.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    
+    const verseCounts = {
+      1: 47, 2: 72, 3: 43, 4: 42, 5: 29, 6: 47, 7: 30, 8: 28,
+      9: 34, 10: 42, 11: 55, 12: 20, 13: 34, 14: 27, 15: 20,
+      16: 24, 17: 28, 18: 78
+    };
+    
+    const chapter = (Math.abs(hash) % 18) + 1;
+    const verse = (Math.abs(hash >> 8) % verseCounts[chapter]) + 1;
+    
+    res.json({ chapter, verse, date: today });
+  } catch (error) {
+    console.error('Global verse of day error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
