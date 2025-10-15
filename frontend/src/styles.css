@@ -1035,19 +1035,21 @@ nav {
     max-width: 400px;
     position: relative;
     animation: modalSlideIn 0.3s ease;
-    margin-top: 25px;
+    margin-top: 30px;
     border: 1px solid var(--border-color);
-    overflow: hidden;
+    overflow: visible;
 }
 
 .auth-modal {
     background: white;
     border-radius: 20px;
+    overflow: visible;
 }
 
 [data-theme="dark"] .auth-modal {
     background: #000000;
     border-radius: 20px;
+    overflow: visible;
 }
 
 .modal-body {
@@ -1060,51 +1062,92 @@ nav {
 }
 
 .modal-header {
-    background: var(--primary-gradient);
+    background: var(--primary-color);
     color: white;
-    padding: 1.5rem;
+    padding: 2rem 1.5rem 1.5rem;
     border-radius: 20px 20px 0 0;
     text-align: center;
-    box-shadow: 0 4px 15px var(--primary-shadow);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     position: relative;
 }
 
+.modal-header h2 {
+    color: white !important;
+    text-shadow: none;
+    font-weight: 600;
+    margin: 0;
+    font-size: 1.4rem;
+}
+
 .modal-header::before {
-    content: '🕉️';
+    content: 'ॐ';
     position: absolute;
-    top: -25px;
+    top: -30px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 1.8rem;
-    background: var(--accent-color);
-    width: 50px;
-    height: 50px;
+    font-size: 1.6rem;
+    background: var(--primary-color);
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 15px var(--primary-shadow);
-    z-index: 10;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    z-index: 11;
+    color: white;
+    border: 3px solid white;
 }
 
 .close {
     position: absolute;
     right: 1rem;
     top: 1rem;
-    color: white;
+    color: white !important;
     font-size: 2rem;
     font-weight: bold;
     cursor: pointer;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+}
+
+.close:hover {
+    color: rgba(255, 255, 255, 0.8) !important;
+    transform: scale(1.1);
 }
 
 .modal-body {
     padding: 3rem 2rem 2rem;
     background: var(--card-bg);
     color: var(--text-primary);
+    border-radius: 0 0 20px 20px;
+}
+
+.auth-modal {
+    margin-top: 0;
+}
+
+.auth-modal .modal-header {
+    background: var(--primary-color);
+}
+
+.auth-modal .modal-body {
+    background: white;
+    color: #333;
+}
+
+[data-theme="dark"] .auth-modal .modal-body {
+    background: #000000;
+    color: #fff;
+}
+
+[data-theme="dark"] .auth-modal .modal-header {
+    background: var(--primary-color);
 }
 
 .form-group {
     margin-bottom: 1.5rem;
+    text-align: left;
 }
 
 .form-group label {
@@ -1112,6 +1155,7 @@ nav {
     margin-bottom: 0.5rem;
     font-weight: 500;
     color: var(--text-primary);
+    text-align: left;
 }
 
 .form-group input {
@@ -1123,6 +1167,7 @@ nav {
     background-color: var(--card-bg);
     color: var(--text-primary);
     transition: border-color 0.3s ease;
+    text-align: left;
 }
 
 .form-group input:focus {

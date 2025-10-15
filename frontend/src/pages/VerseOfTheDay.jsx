@@ -96,13 +96,18 @@ export default function VerseOfTheDay({ user }) {
         setIsBookmarked(false)
         showSuccess('Bookmark removed!')
       } else {
-        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmark/${dailyVerse.chapter}/${dailyVerse.verse}`, {}, {
+        const translation = getHindiTranslation() || getEnglishTranslation() || 'No translation available'
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmark/${dailyVerse.chapter}/${dailyVerse.verse}`, {
+          slok: dailyVerse.slok,
+          translation: translation
+        }, {
           headers: { Authorization: `Bearer ${token}` }
         })
         setIsBookmarked(true)
         showSuccess('Verse bookmarked!')
       }
     } catch (err) {
+      console.error('Bookmark error:', err)
       showError('Failed to update bookmark')
     }
   }
