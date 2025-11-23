@@ -1,5 +1,8 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Card from '../components/ui/Card'
+import Modal from '../components/ui/Modal'
+import Button from '../components/ui/Button'
 
 export default function Chapters() {
   const navigate = useNavigate()
@@ -43,103 +46,118 @@ export default function Chapters() {
   }
 
   return (
-    <div className="page-container">
-      <div className="container">
-        <div className="chapters-page">
-          <div className="page-header">
-            <h1>All Chapters</h1>
-            <p className="page-subtitle">
-              The Bhagavad Gita contains 18 chapters with 700 verses of divine wisdom
-            </p>
-          </div>
+    <div className="container-custom py-12">
+      <div className="text-center mb-16">
+        <h1 className="text-4xl font-bold text-charcoal-900 dark:text-white mb-4">All Chapters</h1>
+        <p className="text-xl text-charcoal-600 dark:text-charcoal-400 max-w-2xl mx-auto">
+          The Bhagavad Gita contains 18 chapters with 700 verses of divine wisdom, guiding you through every aspect of life.
+        </p>
+      </div>
 
-          <div className="chapters-grid">
-            {chapters.map((chapter) => (
-              <div
-                key={chapter.number}
-                className="chapter-card"
-                onClick={() => handleChapterClick(chapter)}
-              >
-                <div className="chapter-header">
-                  <span className="chapter-number-badge">{chapter.number}</span>
-                  <span className="chapter-label">Chapter</span>
-                </div>
-                <div className="chapter-content">
-                  <div className="chapter-sanskrit">
-                    {chapter.sanskrit}
-                  </div>
-                  <div className="chapter-english">
-                    {chapter.english}
-                  </div>
-                  <div className="chapter-meaning">
-                    {chapter.meaning}
-                  </div>
-                  <div className="chapter-footer">
-                    <span className="chapter-stats">{chapter.verses} verses</span>
-                    <span className="chapter-action">Begin Reading →</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+        {chapters.map((chapter) => (
+          <Card
+            key={chapter.number}
+            hover
+            className="cursor-pointer group relative overflow-hidden"
+            onClick={() => handleChapterClick(chapter)}
+          >
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <span className="text-6xl font-bold text-saffron-500">{chapter.number}</span>
+            </div>
 
-          <div className="chapters-summary">
-            <h2>About the Bhagavad Gita</h2>
-            <p>
-              The Bhagavad Gita, often referred to as the Gita, is a 700-verse Hindu scripture 
-              that is part of the epic Mahabharata. It is a conversation between Prince Arjuna 
-              and Lord Krishna, who serves as his charioteer, at the start of the climactic 
-              Kurukshetra War.
-            </p>
-            <p>
-              The Gita addresses the moral and philosophical dilemmas faced by Arjuna, and by 
-              extension, all of humanity. Through Krishna's teachings, it explores fundamental 
-              questions about duty, righteousness, devotion, and the nature of reality itself.
-            </p>
-            <div className="gita-stats">
-              <div className="stat">
-                <span className="stat-number">18</span>
-                <span className="stat-label">Chapters</span>
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-saffron-100 dark:bg-saffron-900/30 text-saffron-700 dark:text-saffron-300 font-bold text-sm">
+                  {chapter.number}
+                </span>
+                <span className="text-sm font-medium text-saffron-600 dark:text-saffron-400 uppercase tracking-wider">
+                  {chapter.verses} Verses
+                </span>
               </div>
-              <div className="stat">
-                <span className="stat-number">700</span>
-                <span className="stat-label">Verses</span>
-              </div>
-              <div className="stat">
-                <span className="stat-number">5000+</span>
-                <span className="stat-label">Years Old</span>
+
+              <h3 className="text-xl font-bold text-charcoal-900 dark:text-white mb-1 font-devanagari">
+                {chapter.sanskrit}
+              </h3>
+              <h4 className="text-lg font-medium text-charcoal-700 dark:text-charcoal-200 mb-2">
+                {chapter.english}
+              </h4>
+              <p className="text-charcoal-500 dark:text-charcoal-400 text-sm mb-6 line-clamp-2">
+                {chapter.meaning}
+              </p>
+
+              <div className="flex items-center text-saffron-600 dark:text-saffron-400 font-medium text-sm group-hover:translate-x-1 transition-transform">
+                Read Chapter →
               </div>
             </div>
-          </div>
+          </Card>
+        ))}
+      </div>
 
-          {/* Verse Selection Modal */}
-          {showVerseModal && selectedChapter && (
-            <div className="modal show">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h2>Select Verse - Chapter {selectedChapter.number}</h2>
-                  <span className="close" onClick={() => setShowVerseModal(false)}>&times;</span>
-                </div>
-                <div className="modal-body">
-                  <p><strong>{selectedChapter.sanskrit}</strong></p>
-                  <p>{selectedChapter.meaning}</p>
-                  <div className="verse-grid">
-                    {Array.from({ length: getChapterVerseCount(selectedChapter.number) }, (_, i) => i + 1).map(verseNum => (
-                      <button
-                        key={verseNum}
-                        className="verse-button"
-                        onClick={() => handleVerseSelect(verseNum)}
-                      >
-                        {verseNum}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+      <div className="bg-sand-50 dark:bg-charcoal-800 rounded-2xl p-8 md:p-12 text-center">
+        <h2 className="text-3xl font-bold text-charcoal-900 dark:text-white mb-6">About the Bhagavad Gita</h2>
+        <div className="max-w-3xl mx-auto space-y-6 text-charcoal-700 dark:text-charcoal-300 leading-relaxed">
+          <p>
+            The Bhagavad Gita, often referred to as the Gita, is a 700-verse Hindu scripture
+            that is part of the epic Mahabharata. It is a conversation between Prince Arjuna
+            and Lord Krishna, who serves as his charioteer, at the start of the climactic
+            Kurukshetra War.
+          </p>
+          <p>
+            The Gita addresses the moral and philosophical dilemmas faced by Arjuna, and by
+            extension, all of humanity. Through Krishna's teachings, it explores fundamental
+            questions about duty, righteousness, devotion, and the nature of reality itself.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-12">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-saffron-500 mb-1">18</div>
+            <div className="text-sm text-charcoal-500 dark:text-charcoal-400">Chapters</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-saffron-500 mb-1">700</div>
+            <div className="text-sm text-charcoal-500 dark:text-charcoal-400">Verses</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-saffron-500 mb-1">5000+</div>
+            <div className="text-sm text-charcoal-500 dark:text-charcoal-400">Years Old</div>
+          </div>
         </div>
       </div>
+
+      {/* Verse Selection Modal */}
+      <Modal
+        isOpen={showVerseModal}
+        onClose={() => setShowVerseModal(false)}
+        title={selectedChapter ? `Chapter ${selectedChapter.number}: ${selectedChapter.english}` : ''}
+        maxWidth="max-w-4xl"
+      >
+        {selectedChapter && (
+          <div>
+            <div className="text-center mb-8">
+              <h3 className="text-2xl font-devanagari text-charcoal-900 dark:text-white mb-2">
+                {selectedChapter.sanskrit}
+              </h3>
+              <p className="text-charcoal-600 dark:text-charcoal-400">
+                {selectedChapter.meaning}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-3">
+              {Array.from({ length: getChapterVerseCount(selectedChapter.number) }, (_, i) => i + 1).map(verseNum => (
+                <button
+                  key={verseNum}
+                  onClick={() => handleVerseSelect(verseNum)}
+                  className="aspect-square flex items-center justify-center rounded-lg bg-sand-50 dark:bg-charcoal-800 hover:bg-saffron-100 dark:hover:bg-saffron-900/30 text-charcoal-700 dark:text-charcoal-300 hover:text-saffron-700 dark:hover:text-saffron-300 font-medium transition-colors border border-transparent hover:border-saffron-200 dark:hover:border-saffron-800"
+                >
+                  {verseNum}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

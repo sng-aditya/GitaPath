@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./db/mongodb');
@@ -13,7 +14,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: [process.env.FRONTEND_URL, 'https://gitapath.netlify.app'],
+  origin: ['http://localhost:5173', 'http://localhost:5174'],
   credentials: true
 }));
 app.use(express.json());

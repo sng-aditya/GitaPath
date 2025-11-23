@@ -9,10 +9,11 @@ import Donate from './pages/Donate'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import SimpleBookmarksModal from './components/SimpleBookmarksModal'
-import { SnackbarProvider } from './components/SnackbarProvider'
+import { useSnackbarContext } from './components/SnackbarProvider'
+import config from './config'
 import axios from 'axios'
 
-export default function App(){
+export default function App() {
   const navigate = useNavigate()
   const location = useLocation()
   const [user, setUser] = useState(null)
@@ -25,12 +26,13 @@ export default function App(){
   const [showSignupModal, setShowSignupModal] = useState(false)
   const [bookmarks, setBookmarks] = useState([])
   const [showBookmarksModal, setShowBookmarksModal] = useState(false)
+  const { showSuccess, showError, showInfo } = useSnackbarContext()
 
 
   useEffect(() => {
     checkAuth()
   }, [])
-  
+
   useEffect(() => {
     if (user) {
       loadBookmarks()
@@ -44,8 +46,10 @@ export default function App(){
   useEffect(() => {
     // Apply dark mode to document
     if (darkMode) {
+      document.documentElement.classList.add('dark')
       document.documentElement.setAttribute('data-theme', 'dark')
     } else {
+      document.documentElement.classList.remove('dark')
       document.documentElement.removeAttribute('data-theme')
     }
     localStorage.setItem('darkMode', JSON.stringify(darkMode))
@@ -63,7 +67,7 @@ export default function App(){
     }
 
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/auth/me`, {
+      const res = await axios.get(`${config.API_BASE_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setUser(res.data.user)
@@ -77,14 +81,14 @@ export default function App(){
     if (!user) return
     try {
       const token = localStorage.getItem('token')
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmarks`, {
+      const res = await axios.get(`${config.API_BASE_URL}/api/user/bookmarks`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      
+
       const bookmarksWithSlokas = await Promise.all(
         (res.data.bookmarks || []).map(async (bookmark) => {
           try {
-            const verseRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/gita/slok/${bookmark.chapter}/${bookmark.verse}`)
+            const verseRes = await axios.get(`${config.API_BASE_URL}/api/gita/slok/${bookmark.chapter}/${bookmark.verse}`)
             return {
               ...bookmark,
               slok: verseRes.data.slok
@@ -97,7 +101,7 @@ export default function App(){
           }
         })
       )
-      
+
       setBookmarks(bookmarksWithSlokas)
     } catch (err) {
       console.error('Failed to load bookmarks:', err)
@@ -106,28 +110,28 @@ export default function App(){
 
   async function handleBookmarkVerse(verse) {
     if (!user || !verse) return
-    
+
     try {
       const token = localStorage.getItem('token')
       const isCurrentlyBookmarked = isBookmarked(verse.chapter, verse.verse)
-      
+
       if (isCurrentlyBookmarked) {
         // Remove bookmark
-        await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmark/${verse.chapter}/${verse.verse}`, {
+        await axios.delete(`${config.API_BASE_URL}/api/user/bookmark/${verse.chapter}/${verse.verse}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
         setBookmarks(prev => prev.filter(b => !(b.chapter === verse.chapter && b.verse === verse.verse)))
       } else {
         // Add bookmark with proper translation priority
         const translation = verse.rams?.ht || verse.prabhu?.ec || verse.siva?.et || verse.chinmay?.ht || 'No translation available'
-        
-        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmark/${verse.chapter}/${verse.verse}`, {
+
+        await axios.post(`${config.API_BASE_URL}/api/user/bookmark/${verse.chapter}/${verse.verse}`, {
           slok: verse.slok,
           translation: translation
         }, {
           headers: { Authorization: `Bearer ${token}` }
         })
-        
+
         const newBookmark = {
           chapter: verse.chapter,
           verse: verse.verse,
@@ -150,13 +154,14 @@ export default function App(){
   async function handleDeleteBookmark(chapter, verse) {
     try {
       const token = localStorage.getItem('token')
-      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmark/${chapter}/${verse}`, {
+      await axios.delete(`${config.API_BASE_URL}/api/user/bookmark/${chapter}/${verse}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setBookmarks(prev => prev.filter(b => !(b.chapter === chapter && b.verse === verse)))
+      showSuccess('Bookmark deleted')
     } catch (err) {
       console.error('Failed to delete bookmark:', err)
-      alert('Failed to delete bookmark. Please try again.')
+      showError('Failed to delete bookmark. Please try again.')
     }
   }
 
@@ -168,13 +173,14 @@ export default function App(){
   async function handleClearBookmarks() {
     try {
       const token = localStorage.getItem('token')
-      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmarks`, {
+      await axios.delete(`${config.API_BASE_URL}/api/user/bookmarks`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setBookmarks([])
+      showSuccess('All bookmarks cleared')
     } catch (err) {
       console.error('Failed to clear bookmarks:', err)
-      alert('Failed to clear bookmarks. Please try again.')
+      showError('Failed to clear bookmarks. Please try again.')
     }
   }
 
@@ -182,14 +188,14 @@ export default function App(){
     setUser(userData)
     setShowLoginModal(false)
     setShowSignupModal(false)
-    
+
     // Check if user has progress and redirect to last read position
     try {
       const token = localStorage.getItem('token')
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/progress`, {
+      const res = await axios.get(`${config.API_BASE_URL}/api/user/progress`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      
+
       const progress = res.data.progress
       if (progress) {
         // Prioritize last_chapter/last_verse, fallback to current_chapter/current_verse
@@ -215,157 +221,206 @@ export default function App(){
 
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        fontSize: '1.2rem' 
-      }}>
-        Loading...
+      <div className="flex justify-center items-center h-screen text-xl font-medium text-charcoal-600 dark:text-charcoal-300 bg-sand-50 dark:bg-charcoal-950">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="text-4xl">ॐ</div>
+          <div>Loading GitaPath...</div>
+        </div>
       </div>
     )
   }
 
   return (
-    <SnackbarProvider>
-      <div className="app">
-        <Header 
-          user={user} 
-          onLogout={handleLogout} 
-          darkMode={darkMode} 
-          onToggleDarkMode={toggleDarkMode}
-          onShowLogin={() => setShowLoginModal(true)}
-          onShowSignup={() => setShowSignupModal(true)}
-          bookmarks={bookmarks}
-          onShowBookmarks={() => setShowBookmarksModal(true)}
-        />
-        
-        <main className="main-content">
-          <Routes>
-            <Route path="/" element={
-              <LandingPage 
-                onLogin={handleLogin} 
-                user={user}
-                showLoginModal={showLoginModal}
-                setShowLoginModal={setShowLoginModal}
-                showSignupModal={showSignupModal}
-                setShowSignupModal={setShowSignupModal}
-                onBookmarkVerse={handleBookmarkVerse}
-                isBookmarked={isBookmarked}
-              />
-            } />
-            <Route path="/reader" element={<Reader user={user} darkMode={darkMode} bookmarks={bookmarks} onBookmarkVerse={handleBookmarkVerse} isBookmarked={isBookmarked} />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/verse-of-day" element={<VerseOfTheDay user={user} />} />
-            <Route path="/chapters" element={<Chapters />} />
-            <Route path="/donate" element={<Donate />} />
-          </Routes>
-        </main>
-        
-        <Footer />
+    <div className="min-h-screen flex flex-col bg-sand-50 dark:bg-charcoal-950 transition-colors duration-300">
+      <Header
+        user={user}
+        onLogout={handleLogout}
+        darkMode={darkMode}
+        onToggleDarkMode={toggleDarkMode}
+        onShowLogin={() => setShowLoginModal(true)}
+        onShowSignup={() => setShowSignupModal(true)}
+        bookmarks={bookmarks}
+        onShowBookmarks={() => setShowBookmarksModal(true)}
+      />
 
-        {/* Login Modal */}
-        <div className={`modal ${showLoginModal ? 'show' : ''}`}>
-          <div className="modal-content auth-modal">
-            <div className="modal-header">
-              <h2>Welcome Back</h2>
-              <span className="close" onClick={() => setShowLoginModal(false)}>&times;</span>
-            </div>
-            <div className="modal-body">
-              <form onSubmit={async (e) => {
-                e.preventDefault()
-                const formData = new FormData(e.target)
-                try {
-                  const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/login`, {
-                    email: formData.get('email'),
-                    password: formData.get('password')
-                  })
-                  localStorage.setItem('token', res.data.token)
-                  const userRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/auth/me`, {
-                    headers: { Authorization: `Bearer ${res.data.token}` }
-                  })
-                  handleLogin(userRes.data.user)
-                } catch (err) {
-                  alert(err.response?.data?.error || 'Login failed')
-                }
-              }}>
-                <div className="form-group">
-                  <label>Email</label>
-                  <input type="email" name="email" required />
-                </div>
-                <div className="form-group">
-                  <label>Password</label>
-                  <input type="password" name="password" required />
-                </div>
-                <button type="submit" className="form-submit">Sign In</button>
-                <div className="form-switch">
-                  Don't have an account? <a onClick={() => {setShowLoginModal(false); setShowSignupModal(true)}}>Sign up</a>
-                </div>
-              </form>
-            </div>
+      <main className="flex-1 pt-20">
+        <Routes>
+          <Route path="/" element={
+            <LandingPage
+              onLogin={handleLogin}
+              user={user}
+              showLoginModal={showLoginModal}
+              setShowLoginModal={setShowLoginModal}
+              showSignupModal={showSignupModal}
+              setShowSignupModal={setShowSignupModal}
+              onBookmarkVerse={handleBookmarkVerse}
+              isBookmarked={isBookmarked}
+            />
+          } />
+          <Route path="/reader" element={<Reader user={user} darkMode={darkMode} bookmarks={bookmarks} onBookmarkVerse={handleBookmarkVerse} isBookmarked={isBookmarked} />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/verse-of-day" element={<VerseOfTheDay user={user} />} />
+          <Route path="/chapters" element={<Chapters />} />
+          <Route path="/donate" element={<Donate />} />
+        </Routes>
+      </main>
+
+      <Footer />
+
+      {/* Login Modal */}
+      <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${showLoginModal ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'} transition-opacity duration-300`}>
+        <div className="absolute inset-0 bg-charcoal-900/60 backdrop-blur-sm" onClick={() => setShowLoginModal(false)}></div>
+        <div className={`relative w-full max-w-md bg-white dark:bg-charcoal-900 rounded-2xl shadow-2xl border border-charcoal-100 dark:border-charcoal-800 transform transition-all duration-300 ${showLoginModal ? 'translate-y-0 scale-100' : 'translate-y-4 scale-95'}`}>
+          <div className="flex items-center justify-between p-6 border-b border-charcoal-100 dark:border-charcoal-800">
+            <h2 className="text-2xl font-bold text-charcoal-900 dark:text-white">Welcome Back</h2>
+            <button onClick={() => setShowLoginModal(false)} className="text-charcoal-400 hover:text-charcoal-600 dark:hover:text-charcoal-200 transition-colors">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-        </div>
-
-        {/* Signup Modal */}
-        <div className={`modal ${showSignupModal ? 'show' : ''}`}>
-          <div className="modal-content auth-modal">
-            <div className="modal-header">
-              <h2>Join the Journey</h2>
-              <span className="close" onClick={() => setShowSignupModal(false)}>&times;</span>
-            </div>
-            <div className="modal-body">
-              <form onSubmit={async (e) => {
-                e.preventDefault()
-                const formData = new FormData(e.target)
-                try {
-                  const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/signup`, {
-                    name: formData.get('name'),
-                    email: formData.get('email'),
-                    password: formData.get('password')
-                  })
-                  localStorage.setItem('token', res.data.token)
-                  const userRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/auth/me`, {
-                    headers: { Authorization: `Bearer ${res.data.token}` }
-                  })
-                  handleLogin(userRes.data.user)
-                } catch (err) {
-                  alert(err.response?.data?.error || 'Signup failed')
-                }
-              }}>
-                <div className="form-group">
-                  <label>Full Name</label>
-                  <input type="text" name="name" required />
-                </div>
-                <div className="form-group">
-                  <label>Email</label>
-                  <input type="email" name="email" required />
-                </div>
-                <div className="form-group">
-                  <label>Password</label>
-                  <input type="password" name="password" required />
-                </div>
-                <button type="submit" className="form-submit">Create Account</button>
-                <div className="form-switch">
-                  Already have an account? <a onClick={() => {setShowSignupModal(false); setShowLoginModal(true)}}>Sign in</a>
-                </div>
-              </form>
-            </div>
+          <div className="p-6">
+            <form onSubmit={async (e) => {
+              e.preventDefault()
+              const formData = new FormData(e.target)
+              try {
+                const res = await axios.post(`${config.API_BASE_URL}/api/auth/login`, {
+                  email: formData.get('email'),
+                  password: formData.get('password')
+                })
+                localStorage.setItem('token', res.data.token)
+                const userRes = await axios.get(`${config.API_BASE_URL}/api/auth/me`, {
+                  headers: { Authorization: `Bearer ${res.data.token}` }
+                })
+                handleLogin(userRes.data.user)
+                showSuccess('Welcome back!')
+              } catch (err) {
+                showError(err.response?.data?.error || 'Login failed')
+              }
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-charcoal-700 dark:text-charcoal-300">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  required
+                  className="w-full px-4 py-2 rounded-lg border border-charcoal-200 dark:border-charcoal-700 bg-white dark:bg-charcoal-800 text-charcoal-900 dark:text-white focus:ring-2 focus:ring-saffron-500 focus:border-transparent outline-none transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-charcoal-700 dark:text-charcoal-300">Password</label>
+                <input
+                  type="password"
+                  name="password"
+                  autoComplete="current-password"
+                  required
+                  className="w-full px-4 py-2 rounded-lg border border-charcoal-200 dark:border-charcoal-700 bg-white dark:bg-charcoal-800 text-charcoal-900 dark:text-white focus:ring-2 focus:ring-saffron-500 focus:border-transparent outline-none transition-all"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full py-3 px-4 bg-gradient-to-r from-saffron-500 to-saffron-600 hover:from-saffron-600 hover:to-saffron-700 text-white font-medium rounded-lg shadow-lg shadow-saffron-500/30 transition-all transform hover:-translate-y-0.5"
+              >
+                Sign In
+              </button>
+              <div className="text-center text-sm text-charcoal-600 dark:text-charcoal-400">
+                Don't have an account? <a onClick={() => { setShowLoginModal(false); setShowSignupModal(true) }} className="text-saffron-600 hover:text-saffron-700 font-medium cursor-pointer">Sign up</a>
+              </div>
+            </form>
           </div>
-        </div>
-
-        {/* Bookmarks Modal */}
-        <SimpleBookmarksModal 
-          isOpen={showBookmarksModal}
-          onClose={() => setShowBookmarksModal(false)}
-          bookmarks={bookmarks}
-        />
-
-        {/* Floating Theme Toggle */}
-        <div className="floating-theme-toggle" onClick={toggleDarkMode}>
-          {darkMode ? '☀️' : '🌙'}
         </div>
       </div>
-    </SnackbarProvider>
+
+      {/* Signup Modal */}
+      <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${showSignupModal ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'} transition-opacity duration-300`}>
+        <div className="absolute inset-0 bg-charcoal-900/60 backdrop-blur-sm" onClick={() => setShowSignupModal(false)}></div>
+        <div className={`relative w-full max-w-md bg-white dark:bg-charcoal-900 rounded-2xl shadow-2xl border border-charcoal-100 dark:border-charcoal-800 transform transition-all duration-300 ${showSignupModal ? 'translate-y-0 scale-100' : 'translate-y-4 scale-95'}`}>
+          <div className="flex items-center justify-between p-6 border-b border-charcoal-100 dark:border-charcoal-800">
+            <h2 className="text-2xl font-bold text-charcoal-900 dark:text-white">Join the Journey</h2>
+            <button onClick={() => setShowSignupModal(false)} className="text-charcoal-400 hover:text-charcoal-600 dark:hover:text-charcoal-200 transition-colors">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="p-6">
+            <form onSubmit={async (e) => {
+              e.preventDefault()
+              const formData = new FormData(e.target)
+              try {
+                const res = await axios.post(`${config.API_BASE_URL}/api/auth/signup`, {
+                  name: formData.get('name'),
+                  email: formData.get('email'),
+                  password: formData.get('password')
+                })
+                localStorage.setItem('token', res.data.token)
+                const userRes = await axios.get(`${config.API_BASE_URL}/api/auth/me`, {
+                  headers: { Authorization: `Bearer ${res.data.token}` }
+                })
+                handleLogin(userRes.data.user)
+                showSuccess('Account created successfully!')
+              } catch (err) {
+                showError(err.response?.data?.error || 'Signup failed')
+              }
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-charcoal-700 dark:text-charcoal-300">Full Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  className="w-full px-4 py-2 rounded-lg border border-charcoal-200 dark:border-charcoal-700 bg-white dark:bg-charcoal-800 text-charcoal-900 dark:text-white focus:ring-2 focus:ring-saffron-500 focus:border-transparent outline-none transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-charcoal-700 dark:text-charcoal-300">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  required
+                  className="w-full px-4 py-2 rounded-lg border border-charcoal-200 dark:border-charcoal-700 bg-white dark:bg-charcoal-800 text-charcoal-900 dark:text-white focus:ring-2 focus:ring-saffron-500 focus:border-transparent outline-none transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-charcoal-700 dark:text-charcoal-300">Password</label>
+                <input
+                  type="password"
+                  name="password"
+                  autoComplete="new-password"
+                  required
+                  className="w-full px-4 py-2 rounded-lg border border-charcoal-200 dark:border-charcoal-700 bg-white dark:bg-charcoal-800 text-charcoal-900 dark:text-white focus:ring-2 focus:ring-saffron-500 focus:border-transparent outline-none transition-all"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full py-3 px-4 bg-gradient-to-r from-saffron-500 to-saffron-600 hover:from-saffron-600 hover:to-saffron-700 text-white font-medium rounded-lg shadow-lg shadow-saffron-500/30 transition-all transform hover:-translate-y-0.5"
+              >
+                Create Account
+              </button>
+              <div className="text-center text-sm text-charcoal-600 dark:text-charcoal-400">
+                Already have an account? <a onClick={() => { setShowSignupModal(false); setShowLoginModal(true) }} className="text-saffron-600 hover:text-saffron-700 font-medium cursor-pointer">Sign in</a>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      {/* Bookmarks Modal */}
+      <SimpleBookmarksModal
+        isOpen={showBookmarksModal}
+        onClose={() => setShowBookmarksModal(false)}
+        bookmarks={bookmarks}
+      />
+
+      {/* Floating Theme Toggle */}
+      <button
+        onClick={toggleDarkMode}
+        className="fixed bottom-6 right-6 z-40 p-3 rounded-full bg-white dark:bg-charcoal-800 text-2xl shadow-lg shadow-charcoal-900/10 hover:scale-110 transition-transform duration-200 border border-charcoal-200 dark:border-charcoal-700"
+      >
+        {darkMode ? '☀️' : '🌙'}
+      </button>
+    </div>
   )
 }

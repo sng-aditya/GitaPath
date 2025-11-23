@@ -1,27 +1,20 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import config from '../config'
+import { useSnackbarContext } from '../components/SnackbarProvider'
 import StartReadingModal from '../components/StartReadingModal'
+import Button from '../components/ui/Button'
+import Card from '../components/ui/Card'
 
 export default function LandingPage({ onLogin, user, showLoginModal, setShowLoginModal, showSignupModal, setShowSignupModal, onBookmarkVerse, isBookmarked }) {
-  console.log('LandingPage component loaded!')
   const navigate = useNavigate()
   const [verse, setVerse] = useState(null)
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState(null)
   const [showStartModal, setShowStartModal] = useState(false)
   const [startLoading, setStartLoading] = useState(false)
-
-  // Login form state
-  const [loginEmail, setLoginEmail] = useState('')
-  const [loginPassword, setLoginPassword] = useState('')
-  const [loginLoading, setLoginLoading] = useState(false)
-
-  // Signup form state
-  const [signupName, setSignupName] = useState('')
-  const [signupEmail, setSignupEmail] = useState('')
-  const [signupPassword, setSignupPassword] = useState('')
-  const [signupLoading, setSignupLoading] = useState(false)
+  const { showSuccess } = useSnackbarContext()
 
   useEffect(() => {
     loadDailyVerse()
@@ -34,7 +27,7 @@ export default function LandingPage({ onLogin, user, showLoginModal, setShowLogi
     if (!user) return
     try {
       const token = localStorage.getItem('token')
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/progress`, {
+      const res = await axios.get(`${config.API_BASE_URL}/api/user/progress`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setProgress(res.data.progress)
@@ -55,22 +48,22 @@ export default function LandingPage({ onLogin, user, showLoginModal, setShowLogi
   async function loadDailyVerse() {
     try {
       let dailyVerseData;
-      
+
       if (user) {
         // Get personalized daily verse for logged-in users
         const token = localStorage.getItem('token')
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/verse-of-day`, {
+        const res = await axios.get(`${config.API_BASE_URL}/api/user/verse-of-day`, {
           headers: { Authorization: `Bearer ${token}` }
         })
         dailyVerseData = res.data
       } else {
         // Get global daily verse for non-logged-in users
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/verse-of-day/global`)
+        const res = await axios.get(`${config.API_BASE_URL}/api/user/verse-of-day/global`)
         dailyVerseData = res.data
       }
-      
+
       // Now fetch the actual verse content
-      const verseRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/gita/${dailyVerseData.chapter}/${dailyVerseData.verse}`)
+      const verseRes = await axios.get(`${config.API_BASE_URL}/api/gita/${dailyVerseData.chapter}/${dailyVerseData.verse}`)
       setVerse(verseRes.data)
     } catch (error) {
       console.error('Error loading verse:', error)
@@ -82,53 +75,6 @@ export default function LandingPage({ onLogin, user, showLoginModal, setShowLogi
         verse: 48
       })
     }
-  }
-
-  async function handleLogin(e) {
-    e.preventDefault()
-    setLoginLoading(true)
-    try {
-      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/login`, {
-        email: loginEmail,
-        password: loginPassword
-      })
-      localStorage.setItem('token', res.data.token)
-      
-      // Get user data
-      const userRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${res.data.token}` }
-      })
-      
-      onLogin(userRes.data.user)
-      setShowLoginModal(false)
-    } catch (err) {
-      alert(err.response?.data?.error || 'Login failed')
-    }
-    setLoginLoading(false)
-  }
-
-  async function handleSignup(e) {
-    e.preventDefault()
-    setSignupLoading(true)
-    try {
-      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/signup`, {
-        name: signupName,
-        email: signupEmail,
-        password: signupPassword
-      })
-      localStorage.setItem('token', res.data.token)
-      
-      // Get user data
-      const userRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${res.data.token}` }
-      })
-      
-      onLogin(userRes.data.user)
-      setShowSignupModal(false)
-    } catch (err) {
-      alert(err.response?.data?.error || 'Signup failed')
-    }
-    setSignupLoading(false)
   }
 
   async function getNewVerse() {
@@ -147,7 +93,7 @@ export default function LandingPage({ onLogin, user, showLoginModal, setShowLogi
     } else {
       const text = `${verse.slok}\n\n${verse.siva?.et || verse.purohit?.et}\n\n- Bhagavad Gita\n\nDiscover more at GitaPath`
       navigator.clipboard.writeText(text).then(() => {
-        alert('Verse copied to clipboard! Share it with your friends.')
+        showSuccess('Verse copied to clipboard! Share it with your friends.')
       })
     }
   }
@@ -182,42 +128,55 @@ export default function LandingPage({ onLogin, user, showLoginModal, setShowLogi
   }
 
   return (
-    <div>
+    <div className="flex flex-col gap-20 pb-20">
       {/* Hero Section */}
-      <section className="hero" id="home">
-        <div className="hero-content">
-          <h1>Daily Wisdom from the Bhagavad Gita</h1>
-          <p>Transform your daily life with timeless teachings. Get personalized insights, modern interpretations, and practical wisdom from the Bhagavad Gita delivered to you every day.</p>
-          <div className="cta-buttons">
+      <section className="relative pt-20 pb-32 overflow-hidden">
+        {/* Background Elements */}
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[1000px] bg-saffron-100/50 dark:bg-saffron-900/10 rounded-full blur-3xl opacity-50"></div>
+          <div className="absolute top-1/2 left-0 w-[500px] h-[500px] bg-blue-100/30 dark:bg-blue-900/10 rounded-full blur-3xl opacity-30"></div>
+        </div>
+
+        <div className="container-custom text-center relative z-10">
+          <div className="inline-block mb-6 px-4 py-1.5 rounded-full bg-saffron-100 dark:bg-saffron-900/30 text-saffron-700 dark:text-saffron-300 text-sm font-medium animate-fade-in">
+            ✨ Ancient Wisdom for Modern Life
+          </div>
+
+          <h1 className="text-5xl md:text-7xl font-bold mb-8 tracking-tight text-charcoal-900 dark:text-white animate-slide-up">
+            Find Clarity in <br />
+            <span className="bg-gradient-to-r from-saffron-500 to-saffron-600 bg-clip-text text-transparent">The Bhagavad Gita</span>
+          </h1>
+
+          <p className="text-xl text-charcoal-600 dark:text-charcoal-300 max-w-2xl mx-auto mb-10 leading-relaxed animate-slide-up" style={{ animationDelay: '0.1s' }}>
+            Transform your daily life with timeless teachings. Get personalized insights, modern interpretations, and practical wisdom delivered to you every day.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
             {user ? (
               <>
                 {progress && (progress.last_chapter || progress.current_chapter > 1 || progress.current_verse > 1) ? (
                   <>
-                    <button 
-                      className="btn btn-primary" 
-                      onClick={() => setShowStartModal(true)}
-                    >
-                      Begin Reading
-                    </button>
-                    <button 
-                      className="btn btn-secondary" 
-                      onClick={handleStartFromBeginning}
-                    >
+                    <Button size="lg" onClick={() => setShowStartModal(true)}>
+                      Continue Reading
+                    </Button>
+                    <Button variant="secondary" size="lg" onClick={handleStartFromBeginning}>
                       Start from Beginning
-                    </button>
+                    </Button>
                   </>
                 ) : (
-                  <button 
-                    className="btn btn-primary" 
-                    onClick={handleStartFromBeginning}
-                  >
-                    Start from Beginning
-                  </button>
+                  <Button size="lg" onClick={handleStartFromBeginning}>
+                    Start Reading
+                  </Button>
                 )}
               </>
             ) : (
               <>
-                <button className="btn btn-primary" onClick={() => setShowSignupModal(true)}>Start Your Journey</button>
+                <Button size="lg" onClick={() => setShowSignupModal(true)}>
+                  Start Your Journey
+                </Button>
+                <Button variant="secondary" size="lg" onClick={() => navigate('/chapters')}>
+                  Explore Chapters
+                </Button>
               </>
             )}
           </div>
@@ -225,218 +184,133 @@ export default function LandingPage({ onLogin, user, showLoginModal, setShowLogi
       </section>
 
       {/* Daily Verse Section */}
-      <section className="daily-verse" id="daily-verse">
-        <div className="container">
-          <div className="section-title">
-            <h2>Today's Verse</h2>
-            <p>Your daily dose of wisdom and reflection</p>
-          </div>
-          
-          <div className="daily-verse-card">
-            <div className="verse-header">
-              <div className="verse-number">
-                Chapter {(verse || fallbackVerse).chapter} • Verse {(verse || fallbackVerse).verse}
-              </div>
-            </div>
-
-            <div className="verse-content">
-              <div className="sanskrit-verse">
-                {(verse || fallbackVerse).slok}
-              </div>
-
-              <div className="transliteration">
-                {(verse || fallbackVerse).transliteration}
-              </div>
-
-              <div className="translations">
-                <div className="translation-card">
-                  <h3>📖 English Translation</h3>
-                  <div className="translation-text">
-                    <p>{(verse || fallbackVerse).siva?.et || (verse || fallbackVerse).purohit?.et || 'No translation available'}</p>
-                  </div>
-                  <span className="translation-author">— Swami Sivananda</span>
-                </div>
-
-                <div className="translation-card">
-                  <h3>💡 Modern Life Application</h3>
-                  <div className="translation-text">
-                    <p>{randomInterpretation}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="verse-actions">
-                <button className="btn btn-primary" onClick={shareVerse}>
-                  <i className="fas fa-share-alt"></i> Share Quote
-                </button>
-                <button className="btn btn-secondary" onClick={getNewVerse} disabled={loading}>
-                  {loading ? <div className="loading"></div> : <><i className="fas fa-refresh"></i> New Verse</>}
-                </button>
-                {user ? (
-                  <button 
-                    className={`btn ${isBookmarked(verse?.chapter, verse?.verse) ? 'btn-primary' : 'btn-secondary'}`}
-                    onClick={() => onBookmarkVerse(verse)}
-                  >
-                    <i className="fas fa-heart"></i> {isBookmarked(verse?.chapter, verse?.verse) ? 'Saved' : 'Save'}
-                  </button>
-                ) : (
-                  <button className="btn btn-secondary" onClick={() => setShowSignupModal(true)}>
-                    <i className="fas fa-heart"></i> Save (Sign Up)
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+      <section className="container-custom">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-charcoal-900 dark:text-white mb-4">Today's Verse</h2>
+          <p className="text-charcoal-600 dark:text-charcoal-400">Your daily dose of wisdom and reflection</p>
         </div>
+
+        <Card className="max-w-4xl mx-auto overflow-hidden">
+          <div className="bg-gradient-to-r from-saffron-500/10 to-saffron-600/10 p-4 text-center border-b border-saffron-100 dark:border-charcoal-800">
+            <span className="font-medium text-saffron-700 dark:text-saffron-400">
+              Chapter {(verse || fallbackVerse).chapter} • Verse {(verse || fallbackVerse).verse}
+            </span>
+          </div>
+
+          <div className="p-8 md:p-12 text-center">
+            <div className="mb-8">
+              <p className="text-2xl md:text-3xl font-devanagari leading-relaxed text-charcoal-900 dark:text-white mb-4">
+                {(verse || fallbackVerse).slok}
+              </p>
+              <p className="text-lg text-charcoal-500 dark:text-charcoal-400 italic font-serif">
+                {(verse || fallbackVerse).transliteration}
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8 text-left max-w-3xl mx-auto">
+              <div className="bg-sand-50 dark:bg-charcoal-800/50 p-6 rounded-xl">
+                <h3 className="font-bold text-charcoal-900 dark:text-white mb-3 flex items-center gap-2">
+                  <span>📖</span> Translation
+                </h3>
+                <p className="text-charcoal-700 dark:text-charcoal-300 leading-relaxed">
+                  {(verse || fallbackVerse).siva?.et || (verse || fallbackVerse).purohit?.et || 'No translation available'}
+                </p>
+                <p className="text-sm text-charcoal-500 mt-4">— Swami Sivananda</p>
+              </div>
+
+              <div className="bg-blue-50 dark:bg-blue-900/10 p-6 rounded-xl">
+                <h3 className="font-bold text-charcoal-900 dark:text-white mb-3 flex items-center gap-2">
+                  <span>💡</span> Modern Insight
+                </h3>
+                <p className="text-charcoal-700 dark:text-charcoal-300 leading-relaxed">
+                  {randomInterpretation}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-4 mt-10">
+              <Button variant="secondary" onClick={shareVerse} className="gap-2">
+                <span>📤</span> Share Quote
+              </Button>
+              <Button variant="secondary" onClick={getNewVerse} disabled={loading} className="gap-2">
+                {loading ? 'Loading...' : <><span>🔄</span> New Verse</>}
+              </Button>
+              {user ? (
+                <Button
+                  variant={isBookmarked(verse?.chapter, verse?.verse) ? 'primary' : 'secondary'}
+                  onClick={() => onBookmarkVerse(verse)}
+                  className="gap-2"
+                >
+                  <span>{isBookmarked(verse?.chapter, verse?.verse) ? '♥' : '♡'}</span>
+                  {isBookmarked(verse?.chapter, verse?.verse) ? 'Saved' : 'Save'}
+                </Button>
+              ) : (
+                <Button variant="secondary" onClick={() => setShowSignupModal(true)} className="gap-2">
+                  <span>♡</span> Save (Sign Up)
+                </Button>
+              )}
+            </div>
+          </div>
+        </Card>
       </section>
 
       {/* Features Section */}
-      <section className="features" id="features">
-        <div className="container">
-          <div className="section-title">
-            <h2>Why GitaPath?</h2>
-            <p>Ancient wisdom for modern living</p>
-          </div>
-          
-          <div className="features-grid">
-            <div className="feature-card">
-              <div className="feature-icon">
-                <i className="fas fa-calendar-day"></i>
+      <section className="container-custom">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-bold text-charcoal-900 dark:text-white mb-4">Why GitaPath?</h2>
+          <p className="text-charcoal-600 dark:text-charcoal-400">Ancient wisdom designed for your modern lifestyle</p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8">
+          {[
+            {
+              icon: "📅",
+              title: "Daily Wisdom",
+              desc: "Receive a carefully selected verse each day with modern context and practical applications."
+            },
+            {
+              icon: "🕉️",
+              title: "Multi-language",
+              desc: "Read in Sanskrit, Hindi, and English with accurate transliterations and translations."
+            },
+            {
+              icon: "💡",
+              title: "Modern Context",
+              desc: "Understand how ancient teachings apply to contemporary challenges like stress and relationships."
+            },
+            {
+              icon: "🎨",
+              title: "Beautiful Cards",
+              desc: "Share wisdom with beautiful, Instagram-ready quote cards that inspire your friends."
+            },
+            {
+              icon: "🔖",
+              title: "Personal Library",
+              desc: "Save your favorite verses and build a collection of wisdom that resonates with you."
+            },
+            {
+              icon: "📈",
+              title: "Track Progress",
+              desc: "Track your reading journey chapter by chapter and see your spiritual growth over time."
+            }
+          ].map((feature, index) => (
+            <Card key={index} hover className="p-8 text-center group">
+              <div className="text-4xl mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                {feature.icon}
               </div>
-              <h3>Daily Wisdom</h3>
-              <p>Receive a carefully selected verse each day with modern context and practical applications for your daily life.</p>
-            </div>
-            
-            <div className="feature-card">
-              <div className="feature-icon">
-                <i className="fas fa-language"></i>
-              </div>
-              <h3>Multi-language Support</h3>
-              <p>Read in Sanskrit, Hindi, and English with accurate transliterations and multiple translations from renowned scholars.</p>
-            </div>
-            
-            <div className="feature-card">
-              <div className="feature-icon">
-                <i className="fas fa-lightbulb"></i>
-              </div>
-              <h3>Modern Interpretations</h3>
-              <p>Understand how ancient teachings apply to contemporary challenges like work stress, relationships, and personal growth.</p>
-            </div>
-            
-            <div className="feature-card">
-              <div className="feature-icon">
-                <i className="fas fa-share-alt"></i>
-              </div>
-              <h3>Beautiful Share Cards</h3>
-              <p>Share wisdom with beautiful, Instagram-ready quote cards that inspire your friends and family.</p>
-            </div>
-            
-            <div className="feature-card">
-              <div className="feature-icon">
-                <i className="fas fa-heart"></i>
-              </div>
-              <h3>Personal Collection</h3>
-              <p>Save your favorite verses and build a personal library of wisdom that resonates with your journey.</p>
-            </div>
-            
-            <div className="feature-card">
-              <div className="feature-icon">
-                <i className="fas fa-mobile-alt"></i>
-              </div>
-              <h3>Progress Tracking</h3>
-              <p>Track your reading journey chapter by chapter, maintain daily streaks, and see your spiritual growth over time.</p>
-            </div>
-          </div>
+              <h3 className="text-xl font-bold text-charcoal-900 dark:text-white mb-3">
+                {feature.title}
+              </h3>
+              <p className="text-charcoal-600 dark:text-charcoal-400 leading-relaxed">
+                {feature.desc}
+              </p>
+            </Card>
+          ))}
         </div>
       </section>
 
-      {/* Login Modal */}
-      <div className={`modal ${showLoginModal ? 'show' : ''}`} onClick={(e) => e.target.classList.contains('modal') && setShowLoginModal(false)}>
-        <div className="modal-content">
-          <div className="modal-header">
-            <h2>Welcome Back</h2>
-            <span className="close" onClick={() => setShowLoginModal(false)}>&times;</span>
-          </div>
-          <div className="modal-body">
-            <form onSubmit={handleLogin}>
-              <div className="form-group">
-                <label>Email</label>
-                <input 
-                  type="email" 
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  required 
-                />
-              </div>
-              <div className="form-group">
-                <label>Password</label>
-                <input 
-                  type="password" 
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  required 
-                />
-              </div>
-              <button type="submit" className="form-submit" disabled={loginLoading}>
-                {loginLoading ? <div className="loading"></div> : 'Sign In'}
-              </button>
-              <div className="form-switch">
-                Don't have an account? <a onClick={() => {setShowLoginModal(false); setShowSignupModal(true)}}>Sign up</a>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      {/* Signup Modal */}
-      <div className={`modal ${showSignupModal ? 'show' : ''}`}>
-        <div className="modal-content">
-          <div className="modal-header">
-            <h2>Join the Journey</h2>
-            <span className="close" onClick={() => setShowSignupModal(false)}>&times;</span>
-          </div>
-          <div className="modal-body">
-            <form onSubmit={handleSignup}>
-              <div className="form-group">
-                <label>Full Name</label>
-                <input 
-                  type="text" 
-                  value={signupName}
-                  onChange={(e) => setSignupName(e.target.value)}
-                  required 
-                />
-              </div>
-              <div className="form-group">
-                <label>Email</label>
-                <input 
-                  type="email" 
-                  value={signupEmail}
-                  onChange={(e) => setSignupEmail(e.target.value)}
-                  required 
-                />
-              </div>
-              <div className="form-group">
-                <label>Password</label>
-                <input 
-                  type="password" 
-                  value={signupPassword}
-                  onChange={(e) => setSignupPassword(e.target.value)}
-                  required 
-                />
-              </div>
-              <button type="submit" className="form-submit" disabled={signupLoading}>
-                {signupLoading ? <div className="loading"></div> : 'Create Account'}
-              </button>
-              <div className="form-switch">
-                Already have an account? <a onClick={() => {setShowSignupModal(false); setShowLoginModal(true)}}>Sign in</a>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-
       {/* Start Reading Modal */}
-      <StartReadingModal 
+      <StartReadingModal
         isOpen={showStartModal}
         onClose={() => setShowStartModal(false)}
         onContinue={handleContinueReading}

@@ -1,5 +1,39 @@
 {
   "dependencies": {
-    "mongoose": "^8.19.1"
-  }
+    "autoprefixer": "^10.4.22",
+    "axios": "^1.13.2",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "framer-motion": "^12.23.24",
+    "lucide-react": "^0.554.0",
+    "mongoose": "^8.20.1",
+    "node-fetch": "^3.3.2",
+    "postcss": "^8.5.6",
+    "react-router-dom": "^7.9.6",
+    "tailwindcss": "^4.1.17",
+    "winston": "^3.18.3"
+  },
+  "name": "gitagpt",
+  "version": "1.0.0",
+  "description": "[![React](https://img.shields.io/badge/React-18.2.0-blue)](https://reactjs.org/)\r [![Node.js](https://img.shields.io/badge/Node.js-Express-green)](https://nodejs.org/)\r [![MongoDB](https://img.shields.io/badge/Database-MongoDB-green)](https://mongodb.com/)\r [![Vite](https://img.shields.io/badge/Build-Vite-purple)](https://vitejs.dev/)",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sng-aditya/GitaPath.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sng-aditya/GitaPath/issues"
+  },
+  "homepage": "https://github.com/sng-aditya/GitaPath#readme"
 }

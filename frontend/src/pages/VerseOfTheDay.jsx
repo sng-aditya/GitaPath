@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
+import config from '../config'
 import { useSnackbarContext } from '../components/SnackbarProvider'
+import Button from '../components/ui/Button'
+import Card from '../components/ui/Card'
 
 export default function VerseOfTheDay({ user }) {
   const [dailyVerse, setDailyVerse] = useState(null)
@@ -9,24 +12,11 @@ export default function VerseOfTheDay({ user }) {
   const { showSuccess, showError } = useSnackbarContext()
 
   const chapterNames = {
-    1: "Arjuna Vishada Yoga - The Yoga of Arjuna's Dejection",
-    2: "Sankhya Yoga - The Yoga of Knowledge",
-    3: "Karma Yoga - The Yoga of Action",
-    4: "Jnana Karma Sannyasa Yoga - The Yoga of Knowledge and Renunciation of Action",
-    5: "Karma Sannyasa Yoga - The Yoga of Renunciation of Action",
-    6: "Atmasamyama Yoga - The Yoga of Self-Control",
-    7: "Paramahamsa Vijnana Yoga - The Yoga of Knowledge and Realization",
-    8: "Aksara Brahma Yoga - The Yoga of the Imperishable Brahman",
-    9: "Raja Vidya Guhya Yoga - The Yoga of Royal Knowledge and Royal Secret",
-    10: "Vibhuti Vistara Yoga - The Yoga of Divine Manifestations",
-    11: "Vishvarupa Darshana Yoga - The Yoga of the Vision of the Universal Form",
-    12: "Bhakti Yoga - The Yoga of Devotion",
-    13: "Kshetra Kshetrajna Vibhaga Yoga - The Yoga of Distinction between Field and Knower of Field",
-    14: "Gunatraya Vibhaga Yoga - The Yoga of Division of Three Gunas",
-    15: "Purushottama Prapthi Yoga - The Yoga of the Supreme Divine Personality",
-    16: "Daivasura Sampad Vibhaga Yoga - The Yoga of Division between Divine and Demoniacal Treasures",
-    17: "Shraddhatraya Vibhaga Yoga - The Yoga of Division of Three Kinds of Faith",
-    18: "Moksha Sannyasa Yoga - The Yoga of Liberation and Renunciation"
+    1: "Arjuna Vishada Yoga", 2: "Sankhya Yoga", 3: "Karma Yoga", 4: "Jnana Karma Sannyasa Yoga",
+    5: "Karma Sannyasa Yoga", 6: "Atmasamyama Yoga", 7: "Paramahamsa Vijnana Yoga", 8: "Aksara Brahma Yoga",
+    9: "Raja Vidya Guhya Yoga", 10: "Vibhuti Vistara Yoga", 11: "Vishvarupa Darshana Yoga", 12: "Bhakti Yoga",
+    13: "Kshetra Kshetrajna Vibhaga Yoga", 14: "Gunatraya Vibhaga Yoga", 15: "Purushottama Prapthi Yoga",
+    16: "Daivasura Sampad Vibhaga Yoga", 17: "Shraddhatraya Vibhaga Yoga", 18: "Moksha Sannyasa Yoga"
   }
 
   useEffect(() => {
@@ -42,22 +32,18 @@ export default function VerseOfTheDay({ user }) {
   async function loadDailyVerse() {
     try {
       let dailyVerseData;
-      
       if (user) {
-        // Get personalized daily verse for logged-in users
         const token = localStorage.getItem('token')
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/verse-of-day`, {
+        const res = await axios.get(`${config.API_BASE_URL}/api/user/verse-of-day`, {
           headers: { Authorization: `Bearer ${token}` }
         })
         dailyVerseData = res.data
       } else {
-        // Get global daily verse for non-logged-in users
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/verse-of-day/global`)
+        const res = await axios.get(`${config.API_BASE_URL}/api/user/verse-of-day/global`)
         dailyVerseData = res.data
       }
-      
-      // Now fetch the actual verse content
-      const verseRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/gita/${dailyVerseData.chapter}/${dailyVerseData.verse}`)
+
+      const verseRes = await axios.get(`${config.API_BASE_URL}/api/gita/${dailyVerseData.chapter}/${dailyVerseData.verse}`)
       setDailyVerse(verseRes.data)
     } catch (err) {
       console.error('Failed to load daily verse:', err)
@@ -69,10 +55,9 @@ export default function VerseOfTheDay({ user }) {
 
   async function checkIfBookmarked() {
     if (!user || !dailyVerse) return
-    
     try {
       const token = localStorage.getItem('token')
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmarks`, {
+      const res = await axios.get(`${config.API_BASE_URL}/api/user/bookmarks`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       const bookmarked = res.data.bookmarks.some(
@@ -85,19 +70,19 @@ export default function VerseOfTheDay({ user }) {
   }
 
   async function toggleBookmark() {
-    if (!user || !dailyVerse) return showError('Please login to bookmark verses')
-    
+    if (!user) return showError('Please login to bookmark verses')
+
     const token = localStorage.getItem('token')
     try {
       if (isBookmarked) {
-        await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmark/${dailyVerse.chapter}/${dailyVerse.verse}`, {
+        await axios.delete(`${config.API_BASE_URL}/api/user/bookmark/${dailyVerse.chapter}/${dailyVerse.verse}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
         setIsBookmarked(false)
         showSuccess('Bookmark removed!')
       } else {
         const translation = getHindiTranslation() || getEnglishTranslation() || 'No translation available'
-        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user/bookmark/${dailyVerse.chapter}/${dailyVerse.verse}`, {
+        await axios.post(`${config.API_BASE_URL}/api/user/bookmark/${dailyVerse.chapter}/${dailyVerse.verse}`, {
           slok: dailyVerse.slok,
           translation: translation
         }, {
@@ -107,143 +92,126 @@ export default function VerseOfTheDay({ user }) {
         showSuccess('Verse bookmarked!')
       }
     } catch (err) {
-      console.error('Bookmark error:', err)
       showError('Failed to update bookmark')
     }
   }
 
   function getHindiTranslation() {
-    if (!dailyVerse) return 'कोई हिंदी अनुवाद उपलब्ध नहीं'
-    if (dailyVerse.chinmay && dailyVerse.chinmay.ht) {
-      return dailyVerse.chinmay.ht
-    }
-    return 'कोई हिंदी अनुवाद उपलब्ध नहीं'
+    return dailyVerse?.chinmay?.ht || 'कोई हिंदी अनुवाद उपलब्ध नहीं'
   }
 
   function getEnglishTranslation() {
-    if (!dailyVerse) return 'No English translation available'
-    if (dailyVerse.siva && dailyVerse.siva.et) {
-      return dailyVerse.siva.et
-    }
-    return 'No English translation available'
+    return dailyVerse?.siva?.et || 'No English translation available'
   }
 
   function getWordByWordTranslation() {
-    if (!dailyVerse) return null
-    if (dailyVerse.siva && dailyVerse.siva.ec) {
-      return dailyVerse.siva.ec
-    }
-    return null
+    return dailyVerse?.siva?.ec || null
   }
 
   if (loading) {
     return (
-      <div className="page-container">
-        <div className="container">
-          <div className="loading-state">
-            <div className="sacred-symbol">ॐ</div>
-            <p>Loading today's divine verse...</p>
-          </div>
-        </div>
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <div className="animate-pulse text-4xl text-saffron-500">ॐ</div>
       </div>
     )
   }
 
   return (
-    <div className="page-container">
-      <div className="container">
-        <div className="verse-of-day-page">
-          <div className="page-header">
-            <h1>Verse of the Day</h1>
-            <p className="page-subtitle">
-              {new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </p>
+    <div className="container-custom py-12">
+      <div className="text-center mb-12">
+        <h1 className="text-4xl font-bold text-charcoal-900 dark:text-white mb-2">Verse of the Day</h1>
+        <p className="text-charcoal-600 dark:text-charcoal-400">
+          {new Date().toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })}
+        </p>
+      </div>
+
+      {dailyVerse && (
+        <Card className="max-w-4xl mx-auto overflow-hidden">
+          <div className="bg-gradient-to-r from-saffron-500/10 to-saffron-600/10 p-4 text-center border-b border-saffron-100 dark:border-charcoal-800">
+            <span className="font-medium text-saffron-700 dark:text-saffron-400">
+              Chapter {dailyVerse.chapter} • Verse {dailyVerse.verse}
+            </span>
+            <div className="text-sm text-charcoal-500 dark:text-charcoal-400 mt-1">
+              {chapterNames[dailyVerse.chapter]}
+            </div>
           </div>
 
-          {dailyVerse && (
-            <div className="daily-verse-card">
-              <div className="verse-header">
-                <div className="verse-number">
-                  Chapter {dailyVerse.chapter} • Verse {dailyVerse.verse}
-                </div>
-                <div className="chapter-name">
-                  {chapterNames[dailyVerse.chapter]}
-                </div>
+          <div className="p-8 md:p-12">
+            <div className="text-center mb-10">
+              <p className="text-2xl md:text-3xl font-devanagari leading-relaxed text-charcoal-900 dark:text-white mb-6">
+                {dailyVerse.slok}
+              </p>
+              {dailyVerse.transliteration && (
+                <p className="text-lg text-charcoal-500 dark:text-charcoal-400 italic font-serif">
+                  {dailyVerse.transliteration}
+                </p>
+              )}
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8 mb-10">
+              <div className="bg-sand-50 dark:bg-charcoal-800/50 p-6 rounded-xl border border-sand-200 dark:border-charcoal-700">
+                <h3 className="font-bold text-charcoal-900 dark:text-white mb-3 flex items-center gap-2">
+                  <span>🌸</span> Hindi Translation
+                </h3>
+                <p className="text-charcoal-700 dark:text-charcoal-300 leading-relaxed font-devanagari">
+                  {getHindiTranslation()}
+                </p>
+                <p className="text-sm text-charcoal-500 mt-3 text-right">— Swami Chinmayananda</p>
               </div>
 
-              <div className="verse-content">
-                <div className="sanskrit-verse">
-                  {dailyVerse.slok}
-                </div>
-
-                {dailyVerse.transliteration && (
-                  <div className="transliteration">
-                    {dailyVerse.transliteration}
-                  </div>
-                )}
-
-                <div className="translations">
-                  <div className="translation-card">
-                    <h3>🌸 Hindi Translation</h3>
-                    <p>{getHindiTranslation()}</p>
-                    <span className="translation-author">— Swami Chinmayananda</span>
-                  </div>
-
-                  <div className="translation-card">
-                    <h3>📖 English Translation</h3>
-                    <p>{getEnglishTranslation()}</p>
-                    <span className="translation-author">— Swami Sivananda</span>
-                  </div>
-
-                  {getWordByWordTranslation() && (
-                    <div className="translation-card word-by-word">
-                      <h3>🔤 Word by Word</h3>
-                      <p>{getWordByWordTranslation()}</p>
-                      <span className="translation-author">— Swami Sivananda</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="verse-actions">
-                  <button 
-                    className={`action-btn bookmark-btn ${isBookmarked ? 'bookmarked' : ''}`}
-                    onClick={toggleBookmark}
-                  >
-                    {isBookmarked ? '⭐ Bookmarked' : '☆ Bookmark'}
-                  </button>
-                  <button 
-                    className="action-btn share-btn"
-                    onClick={() => {
-                      navigator.clipboard.writeText(
-                        `${dailyVerse.slok}\\n\\n${getEnglishTranslation()}\\n\\n— Chapter ${dailyVerse.chapter}, Verse ${dailyVerse.verse}`
-                      )
-                      showSuccess('Verse copied to clipboard!')
-                    }}
-                  >
-                    📋 Copy Verse
-                  </button>
-                  <button 
-                    className="action-btn refresh-btn"
-                    onClick={() => {
-                      // For demonstration - in production, daily verse should remain same for the day
-                      window.location.reload()
-                    }}
-                  >
-                    🔄 Refresh
-                  </button>
-                </div>
+              <div className="bg-blue-50 dark:bg-blue-900/10 p-6 rounded-xl border border-blue-100 dark:border-charcoal-700">
+                <h3 className="font-bold text-charcoal-900 dark:text-white mb-3 flex items-center gap-2">
+                  <span>📖</span> English Translation
+                </h3>
+                <p className="text-charcoal-700 dark:text-charcoal-300 leading-relaxed font-serif">
+                  {getEnglishTranslation()}
+                </p>
+                <p className="text-sm text-charcoal-500 mt-3 text-right">— Swami Sivananda</p>
               </div>
             </div>
-          )}
 
+            {getWordByWordTranslation() && (
+              <div className="bg-charcoal-50 dark:bg-charcoal-800/30 p-6 rounded-xl border border-charcoal-100 dark:border-charcoal-700 mb-10">
+                <h3 className="font-bold text-charcoal-900 dark:text-white mb-3 flex items-center gap-2">
+                  <span>🔤</span> Word by Word
+                </h3>
+                <p className="text-charcoal-700 dark:text-charcoal-300 italic">
+                  {getWordByWordTranslation()}
+                </p>
+              </div>
+            )}
 
-        </div>
-      </div>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Button
+                variant={isBookmarked ? 'primary' : 'secondary'}
+                onClick={toggleBookmark}
+                className="gap-2"
+              >
+                <span>{isBookmarked ? '♥' : '♡'}</span>
+                {isBookmarked ? 'Bookmarked' : 'Bookmark'}
+              </Button>
+
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  navigator.clipboard.writeText(
+                    `${dailyVerse.slok}\n\n${getEnglishTranslation()}\n\n— Chapter ${dailyVerse.chapter}, Verse ${dailyVerse.verse}`
+                  )
+                  showSuccess('Verse copied to clipboard!')
+                }}
+                className="gap-2"
+              >
+                <span>📋</span> Copy Verse
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
     </div>
   )
 }

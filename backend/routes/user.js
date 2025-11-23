@@ -10,10 +10,10 @@ async function auth(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
-    
+
     const parts = authHeader.split(' ');
     if (parts.length !== 2) return res.status(401).json({ error: 'Unauthorized' });
-    
+
     const token = parts[1];
     const payload = jwt.verify(token, JWT_SECRET);
     req.userId = payload.id;
@@ -36,17 +36,27 @@ router.post('/progress', auth, async (req, res) => {
 
     // Update streak logic
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const lastRead = user.last_read_date ? new Date(user.last_read_date) : null;
-    const daysDiff = lastRead ? Math.floor((today - lastRead) / (1000 * 60 * 60 * 24)) : 0;
-    
+    if (lastRead) lastRead.setHours(0, 0, 0, 0);
+
+    const oneDayMs = 1000 * 60 * 60 * 24;
+    const daysDiff = lastRead ? Math.round((today.getTime() - lastRead.getTime()) / oneDayMs) : 0;
+
     let newStreak = user.streak_count || 0;
-    if (daysDiff === 1) {
+
+    if (!user.last_read_date) {
+      // First time reading
+      newStreak = 1;
+    } else if (daysDiff === 1) {
+      // Consecutive day
       newStreak += 1;
     } else if (daysDiff > 1) {
+      // Missed a day or more
       newStreak = 1;
-    } else if (daysDiff === 0) {
-      // Same day, don't change streak
     }
+    // If daysDiff === 0, same day, keep current streak
 
     await User.findByIdAndUpdate(req.userId, {
       current_chapter: chapter,
@@ -69,9 +79,9 @@ router.post('/progress', auth, async (req, res) => {
 router.get('/progress', auth, async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('current_chapter current_verse last_chapter last_verse streak_count last_read_date total_verses_read');
-    
+
     if (!user) return res.status(404).json({ error: 'User not found' });
-    
+
     res.json({ progress: user });
   } catch (error) {
     console.error('Get progress error:', error);
@@ -97,9 +107,9 @@ router.post('/bookmark/:ch/:sl', auth, async (req, res) => {
       return res.status(400).json({ error: 'Verse already bookmarked' });
     }
 
-    await Bookmark.create({ 
-      userId: req.userId, 
-      chapter: ch, 
+    await Bookmark.create({
+      userId: req.userId,
+      chapter: ch,
       verse: sl,
       slok: slok || '',
       translation: translation || ''
@@ -118,7 +128,7 @@ router.get('/bookmarks', auth, async (req, res) => {
     const bookmarks = await Bookmark.find({ userId: req.userId })
       .select('chapter verse createdAt')
       .sort({ createdAt: -1 });
-    
+
     res.json({ bookmarks });
   } catch (error) {
     console.error('Get bookmarks error:', error);
@@ -130,7 +140,7 @@ router.get('/bookmarks', auth, async (req, res) => {
 router.delete('/bookmarks', auth, async (req, res) => {
   try {
     await Bookmark.deleteMany({ userId: req.userId });
-    
+
     res.json({ message: 'All bookmarks cleared successfully' });
   } catch (error) {
     console.error('Clear bookmarks error:', error);
@@ -142,9 +152,9 @@ router.delete('/bookmarks', auth, async (req, res) => {
 router.delete('/bookmark/:chapter/:verse', auth, async (req, res) => {
   try {
     const { chapter, verse } = req.params;
-    
+
     await Bookmark.deleteOne({ userId: req.userId, chapter: parseInt(chapter), verse: parseInt(verse) });
-    
+
     res.json({ message: 'Bookmark removed successfully' });
   } catch (error) {
     console.error('Remove bookmark error:', error);
@@ -159,13 +169,13 @@ router.get('/verse-of-day', auth, async (req, res) => {
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     const today = new Date().toDateString();
-    
+
     // Check if user already has today's verse
     if (user.daily_verse_date === today && user.daily_verse_chapter && user.daily_verse_verse) {
-      return res.json({ 
-        chapter: user.daily_verse_chapter, 
-        verse: user.daily_verse_verse, 
-        date: today 
+      return res.json({
+        chapter: user.daily_verse_chapter,
+        verse: user.daily_verse_verse,
+        date: today
       });
     }
 
@@ -177,23 +187,23 @@ router.get('/verse-of-day', auth, async (req, res) => {
       hash = ((hash << 5) - hash) + char;
       hash = hash & hash;
     }
-    
+
     const verseCounts = {
       1: 47, 2: 72, 3: 43, 4: 42, 5: 29, 6: 47, 7: 30, 8: 28,
       9: 34, 10: 42, 11: 55, 12: 20, 13: 34, 14: 27, 15: 20,
       16: 24, 17: 28, 18: 78
     };
-    
+
     const chapter = (Math.abs(hash) % 18) + 1;
     const verse = (Math.abs(hash >> 8) % verseCounts[chapter]) + 1;
-    
+
     // Save today's verse to user
     await User.findByIdAndUpdate(req.userId, {
       daily_verse_date: today,
       daily_verse_chapter: chapter,
       daily_verse_verse: verse
     });
-    
+
     res.json({ chapter, verse, date: today });
   } catch (error) {
     console.error('Verse of day error:', error);
@@ -205,7 +215,7 @@ router.get('/verse-of-day', auth, async (req, res) => {
 router.get('/verse-of-day/global', async (req, res) => {
   try {
     const today = new Date().toDateString();
-    
+
     // Generate consistent daily verse for all users using just the date
     let hash = 0;
     for (let i = 0; i < today.length; i++) {
@@ -213,16 +223,16 @@ router.get('/verse-of-day/global', async (req, res) => {
       hash = ((hash << 5) - hash) + char;
       hash = hash & hash;
     }
-    
+
     const verseCounts = {
       1: 47, 2: 72, 3: 43, 4: 42, 5: 29, 6: 47, 7: 30, 8: 28,
       9: 34, 10: 42, 11: 55, 12: 20, 13: 34, 14: 27, 15: 20,
       16: 24, 17: 28, 18: 78
     };
-    
+
     const chapter = (Math.abs(hash) % 18) + 1;
     const verse = (Math.abs(hash >> 8) % verseCounts[chapter]) + 1;
-    
+
     res.json({ chapter, verse, date: today });
   } catch (error) {
     console.error('Global verse of day error:', error);
