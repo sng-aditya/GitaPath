@@ -1,13 +1,21 @@
 const mongoose = require('mongoose');
 const logger = require('../utils/logger');
 
+let isConnected = false;
+
 const connectDB = async () => {
+  if (isConnected) {
+    return;
+  }
+
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URL);
-    logger.info(`MongoDB Connected: ${conn.connection.host}`);
+    const db = await mongoose.connect(process.env.MONGODB_URL || process.env.MONGODB_URI);
+    isConnected = db.connections[0].readyState;
+    logger.info(`MongoDB Connected: ${db.connection.host}`);
   } catch (error) {
     logger.error('MongoDB connection error:', error);
-    process.exit(1);
+    // Do not exit process in serverless environment
+    throw error;
   }
 };
 
