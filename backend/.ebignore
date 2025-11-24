@@ -1,0 +1,11 @@
+node_modules/
+.git/
+.env
+*.log
+.DS_Store
+frontend/
+docs/
+.gitignore
+README.md
+railway.json
+Dockerfile
