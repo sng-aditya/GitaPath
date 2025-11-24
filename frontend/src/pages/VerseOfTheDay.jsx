@@ -31,20 +31,9 @@ export default function VerseOfTheDay({ user }) {
 
   async function loadDailyVerse() {
     try {
-      let dailyVerseData;
-      if (user) {
-        const token = localStorage.getItem('token')
-        const res = await axios.get(`${config.API_BASE_URL}/api/user/verse-of-day`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-        dailyVerseData = res.data
-      } else {
-        const res = await axios.get(`${config.API_BASE_URL}/api/user/verse-of-day/global`)
-        dailyVerseData = res.data
-      }
-
-      const verseRes = await axios.get(`${config.API_BASE_URL}/api/gita/${dailyVerseData.chapter}/${dailyVerseData.verse}`)
-      setDailyVerse(verseRes.data)
+      const headers = user ? { Authorization: `Bearer ${localStorage.getItem('token')}` } : {}
+      const res = await axios.get(`${config.API_BASE_URL}/api/gita/verse-of-day`, { headers })
+      setDailyVerse(res.data)
     } catch (err) {
       console.error('Failed to load daily verse:', err)
       showError('Failed to load daily verse')

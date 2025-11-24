@@ -14,6 +14,21 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ error: 'Name, email, and password are required' });
     }
 
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Please provide a valid email address' });
+    }
+
+    // Password validation
+    // Must be at least 8 characters, start with a letter, and contain alphanumeric characters
+    const passwordRegex = /^[a-zA-Z](?=.*[a-zA-Z])(?=.*[0-9]).{7,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        error: 'Password must be at least 8 characters, start with a letter, and contain both letters and numbers'
+      });
+    }
+
     // Check if user already exists
     const existing = await User.findOne({ email });
     if (existing) {
@@ -78,17 +93,17 @@ router.get('/me', async (req, res) => {
   try {
     const auth = req.headers.authorization;
     if (!auth) return res.status(401).json({ error: 'Unauthorized' });
-    
+
     const parts = auth.split(' ');
     if (parts.length !== 2) return res.status(401).json({ error: 'Unauthorized' });
-    
+
     const token = parts[1];
     const payload = jwt.verify(token, JWT_SECRET);
-    
+
     const user = await User.findById(payload.id).select('-password');
-    
+
     if (!user) return res.status(404).json({ error: 'User not found' });
-    
+
     const userResponse = {
       id: user._id,
       name: user.name,
@@ -98,7 +113,7 @@ router.get('/me', async (req, res) => {
       streak_count: user.streak_count,
       last_read_date: user.last_read_date
     };
-    
+
     res.json({ user: userResponse });
   } catch (err) {
     logger.error('Auth me error:', err);

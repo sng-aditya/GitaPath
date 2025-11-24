@@ -6,6 +6,7 @@ const logger = require('./utils/logger');
 const authRouter = require('./routes/auth');
 const userRouter = require('./routes/user');
 const gitaRouter = require('./routes/gita');
+const feedbackRouter = require('./routes/feedback');
 
 // Connect to MongoDB
 connectDB();
@@ -32,6 +33,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/gita', gitaRouter);
+app.use('/api/feedback', feedbackRouter);
 
 // Global error handler
 app.use((err, req, res, next) => {
@@ -45,6 +47,10 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  logger.info(`Backend server started on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    logger.info(`Backend server started on port ${PORT}`);
+  });
+}
+
+module.exports = app;

@@ -6,6 +6,7 @@ import About from './pages/About'
 import VerseOfTheDay from './pages/VerseOfTheDay'
 import Chapters from './pages/Chapters'
 import Donate from './pages/Donate'
+import Feedback from './pages/Feedback'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import SimpleBookmarksModal from './components/SimpleBookmarksModal'
@@ -262,6 +263,7 @@ export default function App() {
           <Route path="/verse-of-day" element={<VerseOfTheDay user={user} />} />
           <Route path="/chapters" element={<Chapters />} />
           <Route path="/donate" element={<Donate />} />
+          <Route path="/feedback" element={<Feedback user={user} />} />
         </Routes>
       </main>
 
@@ -348,11 +350,28 @@ export default function App() {
             <form onSubmit={async (e) => {
               e.preventDefault()
               const formData = new FormData(e.target)
+              const email = formData.get('email')
+              const password = formData.get('password')
+
+              // Email validation
+              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+              if (!emailRegex.test(email)) {
+                showError('Please provide a valid email address')
+                return
+              }
+
+              // Password validation
+              const passwordRegex = /^[a-zA-Z](?=.*[a-zA-Z])(?=.*[0-9]).{7,}$/
+              if (!passwordRegex.test(password)) {
+                showError('Password must be at least 8 characters, start with a letter, and contain both letters and numbers')
+                return
+              }
+
               try {
                 const res = await axios.post(`${config.API_BASE_URL}/api/auth/signup`, {
                   name: formData.get('name'),
-                  email: formData.get('email'),
-                  password: formData.get('password')
+                  email,
+                  password
                 })
                 localStorage.setItem('token', res.data.token)
                 const userRes = await axios.get(`${config.API_BASE_URL}/api/auth/me`, {
