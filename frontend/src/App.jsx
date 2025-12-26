@@ -431,6 +431,7 @@ export default function App() {
         isOpen={showBookmarksModal}
         onClose={() => setShowBookmarksModal(false)}
         bookmarks={bookmarks}
+        onDeleteBookmark={handleDeleteBookmark}
       />
 
       {/* Floating Theme Toggle */}

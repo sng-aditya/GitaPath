@@ -64,6 +64,16 @@ export default function Donate() {
                   <div className="text-5xl mb-4">🇮🇳</div>
                   <h3 className="font-bold text-charcoal-900 dark:text-white mb-3 text-xl">UPI Payment</h3>
                   <p className="text-sm text-charcoal-600 dark:text-charcoal-400 mb-6">Support via UPI payment directly</p>
+                  
+                  {/* QR Code */}
+                  <div className="mb-6">
+                    <img 
+                      src="/pictures/UPI_QR.JPEG" 
+                      alt="UPI QR Code" 
+                      className="w-48 h-48 mx-auto rounded-lg border-2 border-saffron-200 dark:border-saffron-800"
+                    />
+                  </div>
+                  
                   <div className="bg-sand-50 dark:bg-charcoal-800 p-4 rounded-lg mb-6">
                     <p className="text-xs text-charcoal-500 dark:text-charcoal-400 mb-2">UPI ID</p>
                     <p className="font-mono text-lg font-bold text-saffron-600 dark:text-saffron-400">adityas301@fifedral</p>
