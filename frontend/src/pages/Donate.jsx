@@ -59,33 +59,25 @@ export default function Donate() {
             {/* Donation Options */}
             <section>
               <h2 className="text-2xl font-bold text-charcoal-900 dark:text-white mb-6">Ways to Support</h2>
-              <div className="grid sm:grid-cols-2 gap-6">
-                <Card className="p-6 text-center" hover>
-                  <div className="text-4xl mb-4">☕</div>
-                  <h3 className="font-bold text-charcoal-900 dark:text-white mb-2">Buy Me a Coffee</h3>
-                  <p className="text-sm text-charcoal-600 dark:text-charcoal-400 mb-6">Support the developer with a coffee to fuel late-night coding sessions</p>
-                  <Button variant="primary" className="w-full justify-center">Buy Me a Coffee</Button>
-                </Card>
-
-                <Card className="p-6 text-center" hover>
-                  <div className="text-4xl mb-4">🇮🇳</div>
-                  <h3 className="font-bold text-charcoal-900 dark:text-white mb-2">UPI Payment</h3>
-                  <p className="text-sm text-charcoal-600 dark:text-charcoal-400 mb-6">For users in India, support via UPI payment directly</p>
-                  <Button variant="secondary" className="w-full justify-center">Pay via UPI</Button>
-                </Card>
-
-                <Card className="p-6 text-center" hover>
-                  <div className="text-4xl mb-4">🌟</div>
-                  <h3 className="font-bold text-charcoal-900 dark:text-white mb-2">Patreon</h3>
-                  <p className="text-sm text-charcoal-600 dark:text-charcoal-400 mb-6">Become a patron and support ongoing development monthly</p>
-                  <Button variant="secondary" className="w-full justify-center">Support on Patreon</Button>
-                </Card>
-
-                <Card className="p-6 text-center" hover>
-                  <div className="text-4xl mb-4">💳</div>
-                  <h3 className="font-bold text-charcoal-900 dark:text-white mb-2">PayPal</h3>
-                  <p className="text-sm text-charcoal-600 dark:text-charcoal-400 mb-6">One-time or recurring donations via PayPal secure checkout</p>
-                  <Button variant="secondary" className="w-full justify-center">Donate via PayPal</Button>
+              <div className="flex justify-center">
+                <Card className="p-8 text-center max-w-md" hover>
+                  <div className="text-5xl mb-4">🇮🇳</div>
+                  <h3 className="font-bold text-charcoal-900 dark:text-white mb-3 text-xl">UPI Payment</h3>
+                  <p className="text-sm text-charcoal-600 dark:text-charcoal-400 mb-6">Support via UPI payment directly</p>
+                  <div className="bg-sand-50 dark:bg-charcoal-800 p-4 rounded-lg mb-6">
+                    <p className="text-xs text-charcoal-500 dark:text-charcoal-400 mb-2">UPI ID</p>
+                    <p className="font-mono text-lg font-bold text-saffron-600 dark:text-saffron-400">adityas301@fifedral</p>
+                  </div>
+                  <Button 
+                    variant="primary" 
+                    className="w-full justify-center"
+                    onClick={() => {
+                      navigator.clipboard.writeText('adityas301@fifedral')
+                      alert('UPI ID copied to clipboard!')
+                    }}
+                  >
+                    Copy UPI ID
+                  </Button>
                 </Card>
               </div>
             </section>
