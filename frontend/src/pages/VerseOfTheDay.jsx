@@ -20,6 +20,7 @@ export default function VerseOfTheDay({ user }) {
   }
 
   useEffect(() => {
+    document.title = 'आज का श्लोक - Daily Bhagavad Gita Verse | Gita Shlok Hindi Meaning';
     loadDailyVerse()
   }, [])
 

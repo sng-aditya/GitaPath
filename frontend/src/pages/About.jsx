@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 
 function About() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = 'About GitaPath | भगवद गीता हिंदी अनुवाद - Bhagavad Gita Hindi Translation';
+  }, []);
 
   return (
     <div className="pb-20">

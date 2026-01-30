@@ -17,6 +17,7 @@ export default function LandingPage({ onLogin, user, showLoginModal, setShowLogi
   const { showSuccess } = useSnackbarContext()
 
   useEffect(() => {
+    document.title = 'श्रीमद् भगवद गीता हिंदी अनुवाद | Chapters, Shlok, Meaning - Bhagavad Gita Online';
     loadDailyVerse()
     if (user) {
       loadProgress()

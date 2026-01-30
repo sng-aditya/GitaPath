@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import config from '../config'
@@ -13,6 +13,10 @@ export default function Feedback({ user }) {
     const [feedback, setFeedback] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const { showSuccess, showError } = useSnackbarContext()
+
+    useEffect(() => {
+        document.title = 'Feedback - GitaPath | Share Your Thoughts';
+    }, []);
 
     async function handleSubmit(e) {
         e.preventDefault()

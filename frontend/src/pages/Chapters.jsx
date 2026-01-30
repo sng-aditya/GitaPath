@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Card from '../components/ui/Card'
 import Modal from '../components/ui/Modal'
@@ -8,6 +8,10 @@ export default function Chapters() {
   const navigate = useNavigate()
   const [showVerseModal, setShowVerseModal] = useState(false)
   const [selectedChapter, setSelectedChapter] = useState(null)
+
+  useEffect(() => {
+    document.title = 'भगवद गीता के 18 अध्याय | All Chapters of Bhagavad Gita Hindi English';
+  }, []);
 
   const chapters = [
     { number: 1, sanskrit: "अर्जुनविषादयोग", english: "Arjuna Vishada Yoga", meaning: "The Yoga of Arjuna's Dejection", verses: 47 },
